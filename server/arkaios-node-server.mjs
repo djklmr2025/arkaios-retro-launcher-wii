@@ -73,15 +73,40 @@ function normalizeDevice(body, req) {
   };
 }
 
+const VALID_SOURCE_TYPES = new Set(["homebrew", "user_backup"]);
+const USER_BACKUP_SOURCES = new Set(["file", "zip", "external", "local_backup"]);
+const HOMEBREW_SOURCES = new Set(["homebrew", "legal_homebrew", "open shop channel", "libretro"]);
+
+function normalizeSourceType(item) {
+  const explicit = String(item.SourceType || item.source_type || "").toLowerCase();
+  if (VALID_SOURCE_TYPES.has(explicit)) {
+    return explicit;
+  }
+
+  const source = String(item.Source || item.source || "").toLowerCase();
+  if (USER_BACKUP_SOURCES.has(source)) {
+    return "user_backup";
+  }
+  if (HOMEBREW_SOURCES.has(source)) {
+    return "homebrew";
+  }
+
+  return "user_backup";
+}
+
 function sanitizeCatalog(body) {
   const items = Array.isArray(body.items) ? body.items : Array.isArray(body) ? body : [];
-  return items.map((item) => ({
-    label: String(item.Label || item.label || ""),
-    system: String(item.System || item.system || ""),
-    launcher: String(item.Launcher || item.launcher || ""),
-    game_id: String(item.GameId || item.game_id || ""),
-    source: String(item.Source || item.source || "")
-  })).filter((item) => item.label && item.system);
+  return items.map((item) => {
+    return {
+      label: String(item.Label || item.label || ""),
+      system: String(item.System || item.system || ""),
+      launcher: String(item.Launcher || item.launcher || ""),
+      game_id: String(item.GameId || item.game_id || ""),
+      source: String(item.Source || item.source || ""),
+      source_type: normalizeSourceType(item),
+      relative_path: String(item.relative_path || "")
+    };
+  }).filter((item) => item.label && item.system);
 }
 
 async function handle(req, res) {
@@ -131,15 +156,22 @@ async function handle(req, res) {
 
   if (req.method === "GET" && url.pathname === "/api/wii/manifest") {
     sendJson(res, 200, {
-      schema: "arkaios.wii.remote.manifest.v1",
+      schema: "arkaios.wii.remote.manifest.v2",
       downloads: {
         commercial_roms: false,
         exploits: false,
         allowed: ["homebrew", "metadata", "covers", "patches"]
       },
+      catalog_policy: {
+        source_types: ["homebrew", "user_backup"],
+        note: "user_backup solo se acepta cuando el usuario lo importa desde su propio almacenamiento (ver server/local-importer.mjs). El servidor nunca descarga ni referencia ROMs comerciales de terceros."
+      },
       endpoints: {
+        health: "/health",
         heartbeat: "/api/wii/heartbeat",
-        catalog: "/api/wii/catalog"
+        catalog: "/api/wii/catalog",
+        nodes: "/api/wii/nodes",
+        manifest: "/api/wii/manifest"
       }
     });
     return;

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://djklmr2025.github.io/arkaios-retro-launcher-wii/protocol/arkaios-wii-catalog-item.schema.json",
+  "title": "ARKAIOS Wii Catalog Item",
+  "description": "Elemento del catalogo de un nodo Wii. source_type distingue homebrew de backups personales importados desde almacenamiento local del usuario.",
+  "type": "object",
+  "required": ["label", "system", "source_type"],
+  "properties": {
+    "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "system": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "launcher": { "type": "string", "maxLength": 80 },
+    "game_id": { "type": "string", "maxLength": 64 },
+    "source": { "type": "string", "maxLength": 80 },
+    "source_type": {
+      "type": "string",
+      "enum": ["homebrew", "user_backup"],
+      "description": "homebrew = software legal/homebrew; user_backup = archivo importado por el usuario desde su propio dispositivo local."
+    },
+    "relative_path": { "type": "string", "maxLength": 260 }
+  },
+  "additionalProperties": false
+}

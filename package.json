@@ -7,7 +7,12 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/prepare-sites-build.mjs",
     "preview": "vite preview --host 127.0.0.1",
-    "node-server": "node server/arkaios-node-server.mjs"
+    "node-server": "node server/arkaios-node-server.mjs",
+    "mcp-server": "node mcp/arkaios-wii-mcp-server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "vite": "^7.1.5"
