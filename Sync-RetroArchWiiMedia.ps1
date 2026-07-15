@@ -432,11 +432,37 @@ function Write-Catalog {
     $entries = @(Get-AllEntries)
     $targetDir = Join-Path $WiiRoot "retroarch\arkaios"
     $target = Join-Path $targetDir "catalog.json"
+    $metadataTarget = Join-Path $targetDir "metadata.txt"
+    $metadataLines = New-Object System.Collections.Generic.List[string]
+    $metadataLines.Add("# key|title|system|launcher|cover")
+    foreach ($entry in $entries) {
+        $fileName = [System.IO.Path]::GetFileName([string]$entry.Path)
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension([string]$entry.Path)
+        $key = if ($entry.GameId) { [string]$entry.GameId } else { $fileName }
+        $title = ([string]$entry.Label).Trim()
+        if (-not $title) {
+            $title = $stem
+        }
+        $system = ([string]$entry.System).Trim()
+        $launcher = ([string]$entry.Launcher).Trim()
+        $cover = ""
+        if ($system -like "*Super Nintendo*") {
+            $cover = "usb:/snes9xgx/covers/$stem.png"
+        } elseif ($entry.GameId) {
+            $cover = "usb:/images/$($entry.GameId).png"
+        }
+        $metadataLines.Add("$key|$title|$system|$launcher|$cover")
+        if ($key -ne $fileName) {
+            $metadataLines.Add("$fileName|$title|$system|$launcher|$cover")
+        }
+    }
     if (-not $WhatIf) {
         New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
         $entries | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $target -Encoding UTF8
+        $metadataLines | Set-Content -LiteralPath $metadataTarget -Encoding ASCII
     }
     Write-Host "Catalogo creado: $target"
+    Write-Host "Metadata creada: $metadataTarget"
 }
 
 function Write-Playlists {

@@ -12,20 +12,33 @@
 #include "bootstuff.h"
 
 #define MAX_ROMS 512
+#define MAX_METADATA 768
 #define MAX_PATH_LEN 512
 
 typedef struct {
     char path[MAX_PATH_LEN];
     char name[96];
+    char title[128];
     char system[64];
     char launcher[96];
     char app[96];
+    char cover[MAX_PATH_LEN];
 } RomEntry;
+
+typedef struct {
+    char key[96];
+    char title[128];
+    char system[64];
+    char launcher[96];
+    char cover[MAX_PATH_LEN];
+} MetadataEntry;
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 static RomEntry roms[MAX_ROMS];
+static MetadataEntry metadata[MAX_METADATA];
 static int rom_count = 0;
+static int metadata_count = 0;
 static int selected = 0;
 static int top = 0;
 static int sd_mounted = 0;
@@ -195,6 +208,80 @@ static int ends_with_ci(const char *value, const char *suffix) {
     return strcasecmp(value + value_len - suffix_len, suffix) == 0;
 }
 
+static const char *base_name(const char *path) {
+    const char *slash = strrchr(path, '/');
+    return slash ? slash + 1 : path;
+}
+
+static void strip_extension(char *value) {
+    char *dot = strrchr(value, '.');
+    if (dot) {
+        *dot = '\0';
+    }
+}
+
+static void trim_newline(char *value) {
+    size_t len = strlen(value);
+    while (len > 0 && (value[len - 1] == '\n' || value[len - 1] == '\r')) {
+        value[len - 1] = '\0';
+        len--;
+    }
+}
+
+static void load_metadata_file(const char *path) {
+    FILE *file = fopen(path, "r");
+    if (!file) {
+        return;
+    }
+
+    char line[1024];
+    while (metadata_count < MAX_METADATA && fgets(line, sizeof(line), file)) {
+        trim_newline(line);
+        if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+
+        char *key = strtok(line, "|");
+        char *title = strtok(NULL, "|");
+        char *system = strtok(NULL, "|");
+        char *launcher = strtok(NULL, "|");
+        char *cover = strtok(NULL, "|");
+        if (!key || !title) {
+            continue;
+        }
+
+        snprintf(metadata[metadata_count].key, sizeof(metadata[metadata_count].key), "%s", key);
+        snprintf(metadata[metadata_count].title, sizeof(metadata[metadata_count].title), "%s", title);
+        snprintf(metadata[metadata_count].system, sizeof(metadata[metadata_count].system), "%s", system ? system : "");
+        snprintf(metadata[metadata_count].launcher, sizeof(metadata[metadata_count].launcher), "%s", launcher ? launcher : "");
+        snprintf(metadata[metadata_count].cover, sizeof(metadata[metadata_count].cover), "%s", cover ? cover : "");
+        metadata_count++;
+    }
+
+    fclose(file);
+}
+
+static void load_metadata(void) {
+    load_metadata_file("sd:/retroarch/arkaios/metadata.txt");
+    load_metadata_file("usb:/retroarch/arkaios/metadata.txt");
+}
+
+static const MetadataEntry *find_metadata(const char *full_path, const char *file_name) {
+    char stem[256];
+    snprintf(stem, sizeof(stem), "%s", file_name);
+    strip_extension(stem);
+
+    for (int i = 0; i < metadata_count; i++) {
+        if (!strcasecmp(metadata[i].key, file_name) || !strcasecmp(metadata[i].key, stem)) {
+            return &metadata[i];
+        }
+        if (strstr(full_path, metadata[i].key)) {
+            return &metadata[i];
+        }
+    }
+    return NULL;
+}
+
 static int detect_rom(const char *file, char *system, size_t system_size, char *launcher, size_t launcher_size, char *app, size_t app_size) {
     if (ends_with_ci(file, ".wbfs")) {
         snprintf(system, system_size, "Wii");
@@ -287,11 +374,15 @@ static void add_rom(const char *path, const char *name, const char *system, cons
     if (rom_count >= MAX_ROMS) {
         return;
     }
+    const MetadataEntry *meta = find_metadata(path, name);
+
     snprintf(roms[rom_count].path, sizeof(roms[rom_count].path), "%s", path);
     snprintf(roms[rom_count].name, sizeof(roms[rom_count].name), "%s", name);
-    snprintf(roms[rom_count].system, sizeof(roms[rom_count].system), "%s", system);
-    snprintf(roms[rom_count].launcher, sizeof(roms[rom_count].launcher), "%s", launcher);
+    snprintf(roms[rom_count].title, sizeof(roms[rom_count].title), "%s", meta ? meta->title : name);
+    snprintf(roms[rom_count].system, sizeof(roms[rom_count].system), "%s", meta && meta->system[0] ? meta->system : system);
+    snprintf(roms[rom_count].launcher, sizeof(roms[rom_count].launcher), "%s", meta && meta->launcher[0] ? meta->launcher : launcher);
     snprintf(roms[rom_count].app, sizeof(roms[rom_count].app), "%s", app);
+    snprintf(roms[rom_count].cover, sizeof(roms[rom_count].cover), "%s", meta ? meta->cover : "");
     rom_count++;
 }
 
@@ -365,13 +456,19 @@ static void draw(void) {
 
     for (int i = 0; i < 18 && (top + i) < rom_count; i++) {
         int idx = top + i;
-        printf("%c %-10s %s\n", idx == selected ? '>' : ' ', roms[idx].system, roms[idx].name);
+        printf("%c %-10s %.42s\n", idx == selected ? '>' : ' ', roms[idx].system, roms[idx].title);
     }
 
-    printf("\nSeleccionado:\n");
-    printf("Launcher: %s\n", roms[selected].launcher);
-    printf("App/Core : %s\n", roms[selected].app);
-    printf("ROM : %s\n", roms[selected].path);
+    printf("\x1b[4;53HSeleccionado");
+    printf("\x1b[6;53H%.25s", roms[selected].title);
+    printf("\x1b[8;53HSistema:");
+    printf("\x1b[9;53H%.25s", roms[selected].system);
+    printf("\x1b[11;53HLauncher:");
+    printf("\x1b[12;53H%.25s", roms[selected].launcher);
+    printf("\x1b[14;53HArchivo:");
+    printf("\x1b[15;53H%.25s", base_name(roms[selected].path));
+    printf("\x1b[17;53HCover:");
+    printf("\x1b[18;53H%.25s", roms[selected].cover[0] ? base_name(roms[selected].cover) : "pendiente");
 }
 
 static void prepare_launch(const RomEntry *rom) {
@@ -407,6 +504,7 @@ int main(int argc, char **argv) {
     sd_mounted = fatMountSimple("sd", &__io_wiisd) ? 1 : 0;
     usb_mounted = fatMountSimple("usb", &__io_usbstorage) ? 1 : 0;
     collect_sd_debug();
+    load_metadata();
 
     scan_dir("sd:/Roms");
     scan_dir("usb:/Roms");
