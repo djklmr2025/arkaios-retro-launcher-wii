@@ -15,5 +15,7 @@ data/
 release/
 _local/
 secrets/
+Roms/
+roms/
 .env
 .env.*

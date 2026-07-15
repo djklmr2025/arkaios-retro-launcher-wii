@@ -1,4 +1,4 @@
-export { applyBps, crc32 };
+export { applyBps, crc32, inspectBps };
 
 const hasDocument = typeof document !== "undefined";
 const romInput = hasDocument ? document.getElementById("rom-file") : null;
@@ -28,6 +28,10 @@ function crc32(bytes) {
     crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+function toHex32(value) {
+  return value.toString(16).padStart(8, "0").toUpperCase();
 }
 
 function readVlv(reader) {
@@ -86,7 +90,34 @@ class ByteReader {
   }
 }
 
+function inspectBps(patchBytes) {
+  if (patchBytes.length < 16) {
+    throw new Error("Patch BPS demasiado pequeno.");
+  }
+
+  const reader = new ByteReader(patchBytes);
+  const magic = String.fromCharCode(...reader.readBytes(4));
+  if (magic !== "BPS1") {
+    throw new Error("El parche no es BPS valido.");
+  }
+
+  const sourceSize = readVlv(reader);
+  const targetSize = readVlv(reader);
+  const metadataSize = readVlv(reader);
+  reader.readBytes(metadataSize);
+
+  const footer = patchBytes.length - 12;
+  return {
+    sourceSize,
+    targetSize,
+    sourceCrc: reader.readUint32LE(footer),
+    targetCrc: reader.readUint32LE(footer + 4),
+    patchCrc: reader.readUint32LE(footer + 8)
+  };
+}
+
 function applyBps(sourceBytes, patchBytes) {
+  const info = inspectBps(patchBytes);
   const reader = new ByteReader(patchBytes);
   const magic = String.fromCharCode(...reader.readBytes(4));
   if (magic !== "BPS1") {
@@ -99,7 +130,7 @@ function applyBps(sourceBytes, patchBytes) {
   reader.readBytes(metadataSize);
 
   if (sourceBytes.length !== sourceSize) {
-    throw new Error(`La ROM base mide ${sourceBytes.length} bytes, pero el parche espera ${sourceSize}.`);
+    throw new Error(`La ROM base mide ${sourceBytes.length.toLocaleString()} bytes, pero el parche espera ${sourceSize.toLocaleString()} bytes.`);
   }
 
   const targetBytes = new Uint8Array(targetSize);
@@ -146,18 +177,16 @@ function applyBps(sourceBytes, patchBytes) {
     }
   }
 
-  const sourceCrc = reader.readUint32LE(commandEnd);
-  const targetCrc = reader.readUint32LE(commandEnd + 4);
-  const patchCrc = reader.readUint32LE(commandEnd + 8);
   const patchWithoutCrc = patchBytes.subarray(0, commandEnd + 8);
+  const actualSourceCrc = crc32(sourceBytes);
 
-  if (crc32(sourceBytes) !== sourceCrc) {
-    throw new Error("La ROM base no coincide con el CRC esperado por el parche.");
+  if (actualSourceCrc !== info.sourceCrc) {
+    throw new Error(`La ROM base no coincide. CRC esperado ${toHex32(info.sourceCrc)}, CRC recibido ${toHex32(actualSourceCrc)}.`);
   }
-  if (crc32(targetBytes) !== targetCrc) {
+  if (crc32(targetBytes) !== info.targetCrc) {
     throw new Error("La ROM generada no coincide con el CRC esperado.");
   }
-  if (crc32(patchWithoutCrc) !== patchCrc) {
+  if (crc32(patchWithoutCrc) !== info.patchCrc) {
     throw new Error("El archivo BPS no coincide con su CRC interno.");
   }
 
@@ -190,6 +219,40 @@ function outputName(romName, patchName) {
   return `${base}.sfc`;
 }
 
+async function updateCompatibilityStatus() {
+  try {
+    const romFile = romInput?.files?.[0];
+    const patchFile = patchInput?.files?.[0];
+    if (!romFile && !patchFile) {
+      setStatus("Esperando ROM base y parche BPS.");
+      return;
+    }
+    if (!patchFile) {
+      setStatus(`ROM base seleccionada: ${romFile.name}. Selecciona el parche BPS para validar compatibilidad.`);
+      return;
+    }
+
+    const patchBytes = await readFileBytes(patchFile);
+    const info = inspectBps(patchBytes);
+    if (!romFile) {
+      setStatus(`Este parche requiere una ROM base de ${info.sourceSize.toLocaleString()} bytes con CRC32 ${toHex32(info.sourceCrc)}.`);
+      return;
+    }
+
+    const romBytes = await readFileBytes(romFile);
+    const romCrc = crc32(romBytes);
+    const sizeOk = romBytes.length === info.sourceSize;
+    const crcOk = romCrc === info.sourceCrc;
+    if (sizeOk && crcOk) {
+      setStatus(`ROM compatible. CRC32 ${toHex32(romCrc)}. Puedes generar el hack localmente.`);
+    } else {
+      setStatus(`ROM no compatible. Esperado: ${info.sourceSize.toLocaleString()} bytes / CRC32 ${toHex32(info.sourceCrc)}. Recibido: ${romBytes.length.toLocaleString()} bytes / CRC32 ${toHex32(romCrc)}.`, true);
+    }
+  } catch (error) {
+    setStatus(error.message || "No se pudo validar compatibilidad.", true);
+  }
+}
+
 applyButton?.addEventListener("click", async () => {
   try {
     const romFile = romInput?.files?.[0];
@@ -216,3 +279,6 @@ clearButton?.addEventListener("click", () => {
   if (patchInput) patchInput.value = "";
   setStatus("Esperando ROM base y parche BPS.");
 });
+
+romInput?.addEventListener("change", updateCompatibilityStatus);
+patchInput?.addEventListener("change", updateCompatibilityStatus);
