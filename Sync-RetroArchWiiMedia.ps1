@@ -126,6 +126,16 @@ $externalLaunchers = @(
     }
 )
 
+$standaloneRoutes = @(
+    @{
+        System = "Nintendo - Super Nintendo Entertainment System"
+        Launcher = "Snes9x GX"
+        AppPath = "apps\snes9xgx\boot.dol"
+        RomFolder = "snes9xgx\roms"
+        Reason = "Preferido para hacks SNES pesados cuando el core de RetroArch Wii va lento."
+    }
+)
+
 function Assert-WiiRoot {
     if (-not (Test-Path -LiteralPath $WiiRoot)) {
         throw "No existe WiiRoot: $WiiRoot"
@@ -264,8 +274,63 @@ function Get-ExternalEntries {
     return $entries | Sort-Object System, Label, Path -Unique
 }
 
+function Get-StandaloneRoute($Entry) {
+    foreach ($route in $standaloneRoutes) {
+        if ($Entry.System -ne $route.System) {
+            continue
+        }
+        $appFullPath = Join-Path $WiiRoot $route.AppPath
+        if (Test-Path -LiteralPath $appFullPath) {
+            return $route
+        }
+    }
+    return $null
+}
+
+function Convert-ToStandaloneRomPath($Entry, $Route) {
+    $fileName = [System.IO.Path]::GetFileName($Entry.Path)
+    $target = Join-Path (Join-Path $WiiRoot $Route.RomFolder) $fileName
+    return $target
+}
+
+function Sync-StandaloneRomCopies($Entries) {
+    foreach ($entry in $Entries) {
+        $route = Get-StandaloneRoute $entry
+        if (-not $route) {
+            continue
+        }
+        $target = Convert-ToStandaloneRomPath $entry $route
+        if ($WhatIf) {
+            Write-Host "WhatIf: copiaria $($entry.Path) -> $target"
+            continue
+        }
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+        if ((-not (Test-Path -LiteralPath $target)) -or ((Get-Item -LiteralPath $target).Length -ne (Get-Item -LiteralPath $entry.Path).Length)) {
+            Copy-Item -LiteralPath $entry.Path -Destination $target -Force
+            Write-Host "Standalone route: $($entry.Label) -> $target"
+        }
+    }
+}
+
 function Get-AllEntries {
     $retro = @(Get-RomEntries | ForEach-Object {
+        $route = Get-StandaloneRoute $_
+        if ($route) {
+            $appFullPath = Join-Path $WiiRoot $route.AppPath
+            $standaloneRomPath = Convert-ToStandaloneRomPath $_ $route
+            return [pscustomobject]@{
+                Path = $_.Path
+                Label = $_.Label
+                System = $_.System
+                Launcher = $route.Launcher
+                LauncherPath = Convert-ToRetroPath $appFullPath
+                GameId = ""
+                Source = $_.Source
+                PreferredLauncher = $route.Launcher
+                StandaloneRomPath = Convert-ToRetroPath $standaloneRomPath
+                RoutingReason = $route.Reason
+            }
+        }
         [pscustomobject]@{
             Path = $_.Path
             Label = $_.Label
@@ -362,6 +427,8 @@ function Show-Scan {
 }
 
 function Write-Catalog {
+    $romEntries = @(Get-RomEntries)
+    Sync-StandaloneRomCopies $romEntries
     $entries = @(Get-AllEntries)
     $targetDir = Join-Path $WiiRoot "retroarch\arkaios"
     $target = Join-Path $targetDir "catalog.json"
