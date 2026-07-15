@@ -4,9 +4,12 @@
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 #include <dirent.h>
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "bootstuff.h"
 
 #define MAX_ROMS 512
 #define MAX_PATH_LEN 512
@@ -28,6 +31,144 @@ static int top = 0;
 static int sd_mounted = 0;
 static int usb_mounted = 0;
 static char sd_debug[256] = "";
+
+static void build_launch_args(const char *dol_path, const char *rom_path, struct __argv *args) {
+    memset(args, 0, sizeof(*args));
+    args->argvMagic = ARGV_MAGIC;
+    args->argc = rom_path && rom_path[0] ? 2 : 1;
+    args->length = strlen(dol_path) + 1 + (args->argc == 2 ? strlen(rom_path) + 1 : 0);
+    args->commandLine = (char *)malloc(args->length);
+    args->argv = (char **)malloc(sizeof(char *) * args->argc);
+
+    if (!args->commandLine || !args->argv) {
+        args->argvMagic = 0;
+        return;
+    }
+
+    char *cursor = args->commandLine;
+    strcpy(cursor, dol_path);
+    args->argv[0] = cursor;
+    cursor += strlen(cursor) + 1;
+
+    if (args->argc == 2) {
+        strcpy(cursor, rom_path);
+        args->argv[1] = cursor;
+    }
+
+    args->endARGV = args->argv + args->argc;
+}
+
+static int read_file_to_memory(const char *path, u8 **buffer, size_t *size) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        return 0;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (file_size <= 0) {
+        fclose(file);
+        return 0;
+    }
+
+    u8 *data = (u8 *)memalign(32, (size_t)file_size);
+    if (!data) {
+        fclose(file);
+        return 0;
+    }
+
+    size_t read = fread(data, 1, (size_t)file_size, file);
+    fclose(file);
+
+    if (read != (size_t)file_size) {
+        free(data);
+        return 0;
+    }
+
+    DCFlushRange(data, (size_t)file_size);
+    *buffer = data;
+    *size = (size_t)file_size;
+    return 1;
+}
+
+static void shutdown_for_chainload(void) {
+    fatUnmount("sd");
+    fatUnmount("usb");
+    WPAD_Shutdown();
+    VIDEO_SetBlack(TRUE);
+    VIDEO_Flush();
+    VIDEO_WaitVSync();
+    SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+}
+
+static int app_boot_path(const RomEntry *rom, char *path, size_t path_size) {
+    if (!strcmp(rom->app, "snes9xgx")) {
+        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/snes9xgx/boot.dol" : "usb:/apps/snes9xgx/boot.dol");
+        return 1;
+    }
+    if (!strcmp(rom->app, "usbloader_gx")) {
+        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/usbloader_gx/boot.dol" : "usb:/apps/usbloader_gx/boot.dol");
+        return 1;
+    }
+    if (!strcmp(rom->app, "Nintendont")) {
+        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/nintendont/boot.dol" : "usb:/apps/nintendont/boot.dol");
+        return 1;
+    }
+    if (!strcmp(rom->app, "not64")) {
+        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/not64/boot.dol" : "usb:/apps/not64/boot.dol");
+        return 1;
+    }
+    if (!strcmp(rom->app, "DeSmuMEWii")) {
+        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/DeSmuMEWii/boot.dol" : "usb:/apps/DeSmuMEWii/boot.dol");
+        return 1;
+    }
+    return 0;
+}
+
+static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_size) {
+    char dol_path[MAX_PATH_LEN];
+    if (!app_boot_path(rom, dol_path, sizeof(dol_path))) {
+        snprintf(error, error_size, "Sin launcher directo para %s", rom->app);
+        return 0;
+    }
+
+    u8 *dol = NULL;
+    size_t dol_size = 0;
+    if (!read_file_to_memory(dol_path, &dol, &dol_size)) {
+        snprintf(error, error_size, "No pude leer %s", dol_path);
+        return 0;
+    }
+
+    if (!validate_dol(dol)) {
+        free(dol);
+        snprintf(error, error_size, "El launcher no parece DOL valido");
+        return 0;
+    }
+
+    struct __argv args;
+    build_launch_args(dol_path, rom->path, &args);
+    if (args.argvMagic != ARGV_MAGIC) {
+        free(dol);
+        snprintf(error, error_size, "No pude crear argumentos");
+        return 0;
+    }
+
+    void (*entry)(void) = (void (*)(void))relocate_dol(dol, &args);
+    free(dol);
+
+    if (!entry) {
+        snprintf(error, error_size, "No pude reubicar el DOL");
+        return 0;
+    }
+
+    *(vu32 *)0x800000F8 = 0x0E7BE2C0;
+    *(vu32 *)0x800000FC = 0x2B73A840;
+    shutdown_for_chainload();
+    entry();
+    return 1;
+}
 
 static void init_video(void) {
     VIDEO_Init();
@@ -245,9 +386,16 @@ static void prepare_launch(const RomEntry *rom) {
         fclose(handoff);
     }
 
-    printf("\nHandoff creado para RetroArch:\n");
+    printf("\nHandoff creado:\n");
     printf("%s\n", rom->name);
-    printf("\nFalta integrar chainloader DOL en la siguiente fase.\n");
+
+    char error[160];
+    printf("\nLanzando %s...\n", rom->launcher);
+    VIDEO_WaitVSync();
+    if (!launch_app_for_rom(rom, error, sizeof(error))) {
+        printf("\nNo se pudo lanzar directo:\n%s\n", error);
+    }
+
     printf("Presiona B para volver.\n");
 }
 
