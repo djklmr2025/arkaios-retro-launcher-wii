@@ -20,6 +20,7 @@ https://arkaios-retro-wii.djklmr528441.chatgpt.site
 
 - `Arkaios_Retro_Launcher_UI.hta`: interfaz local para Windows.
 - `Sync-RetroArchWiiMedia.ps1`: escaneo, catalogo, playlists, portadas e instalacion de homebrew faltante.
+- `Arkaios-SaveSync.ps1`: backup/sync/restauracion de saves e importacion local de ROMs.
 - `native-wii-launcher/`: base de launcher nativo para compilar a `boot.dol` con devkitPro.
 - `index.html`: panel web simple de sincronizacion remota.
 - `public/arkaios-wii-manifest.json`: manifest remoto para futuras alineaciones.
@@ -38,7 +39,25 @@ O desde PowerShell:
 powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -Scan
 powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -InstallMissingEmulators
 powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -CreateCatalog -CreatePlaylists -SyncThumbnails
+powershell -ExecutionPolicy Bypass -File .\Arkaios-SaveSync.ps1 -WiiRoot D:\ -SyncSaves
 ```
+
+## Save sync
+
+La sincronizacion local usa por defecto:
+
+```text
+C:\ARKAIOS\arkaios-wii-sync
+```
+
+Rutas incluidas:
+
+- `D:\retroarch\saves`
+- `D:\retroarch\states`
+- `D:\retroarch\arkaios`
+- `D:\Roms\Nintendo - Super Nintendo Entertainment System\_saves`
+
+El flujo es conservador: copia archivos nuevos o mas recientes entre USB y mirror local. Antes de restaurar se recomienda ejecutar `-BackupSaves`.
 
 ## Politica de descargas
 

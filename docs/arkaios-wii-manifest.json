@@ -59,5 +59,15 @@
     "policy": "homebrew-and-metadata-only",
     "commercial_roms": false,
     "exploits": false
+  },
+  "save_sync": {
+    "default_sync_root": "C:\\ARKAIOS\\arkaios-wii-sync",
+    "paths": [
+      "D:\\retroarch\\saves",
+      "D:\\retroarch\\states",
+      "D:\\retroarch\\arkaios",
+      "D:\\Roms\\Nintendo - Super Nintendo Entertainment System\\_saves"
+    ],
+    "mode": "conservative-newer-file-wins"
   }
 }
