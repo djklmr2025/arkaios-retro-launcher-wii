@@ -283,9 +283,9 @@
         .wide { grid-column: auto; }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-BR4ZQqtS.js"></script>
+    <script type="module" crossorigin src="../assets/index-BR4ZQqtS.js"></script>
   </head>
-  <body data-page="home">
+  <body data-page="panel">
     <header>
       <div class="wrap top">
         <div>
@@ -293,17 +293,17 @@
           <p class="muted">Panel remoto, patcher local, Wii node, MCP y rutas de sincronizacion para Wii.</p>
         </div>
         <div class="actions">
-          <a class="button primary" href="./manifest/">Manifest</a>
+          <a class="button primary" href="../manifest/">Manifest</a>
           <a class="button" href="https://github.com/djklmr2025/arkaios-retro-launcher-wii">GitHub</a>
         </div>
       </div>
       <nav class="wrap nav" aria-label="Secciones">
-        <a data-nav="home" href="./">Inicio</a>
-        <a data-nav="panel" href="./panel/">Panel</a>
-        <a data-nav="convertidor" href="./convertidor/">Convertidor</a>
-        <a data-nav="sync" href="./sync/">Sync</a>
-        <a data-nav="node" href="./node/">Wii Node</a>
-        <a data-nav="manifest" href="./manifest/">Manifest</a>
+        <a data-nav="home" href="../">Inicio</a>
+        <a data-nav="panel" href="../panel/">Panel</a>
+        <a data-nav="convertidor" href="../convertidor/">Convertidor</a>
+        <a data-nav="sync" href="../sync/">Sync</a>
+        <a data-nav="node" href="../node/">Wii Node</a>
+        <a data-nav="manifest" href="../manifest/">Manifest</a>
       </nav>
     </header>
 
@@ -313,25 +313,25 @@
           <h2>Un punto de control para preparar y operar ARKAIOS en Wii</h2>
           <p class="muted">Cada modulo tiene su propia direccion web para que puedas compartir solo lo que corresponde: convertidor, panel, sincronizacion, node/MCP o manifest.</p>
           <div class="actions">
-            <a class="button primary" href="./convertidor/">Abrir convertidor</a>
-            <a class="button" href="./panel/">Ver panel tecnico</a>
+            <a class="button primary" href="../convertidor/">Abrir convertidor</a>
+            <a class="button" href="../panel/">Ver panel tecnico</a>
           </div>
         </div>
         <div class="grid">
           <article class="panel">
             <h3>Convertidor</h3>
             <p class="muted">Aplica parches BPS localmente en navegador. No sube ROMs ni genera archivos en servidor.</p>
-            <a class="button" href="./convertidor/">Abrir</a>
+            <a class="button" href="../convertidor/">Abrir</a>
           </article>
           <article class="panel">
             <h3>Sincronizacion</h3>
             <p class="muted">Comandos y rutas para catalogos, thumbnails, playlists y save sync.</p>
-            <a class="button" href="./sync/">Abrir</a>
+            <a class="button" href="../sync/">Abrir</a>
           </article>
           <article class="panel">
             <h3>Wii Node / MCP</h3>
             <p class="muted">Servidor local, heartbeat, catalog upload y conexion para agentes compatibles.</p>
-            <a class="button" href="./node/">Abrir</a>
+            <a class="button" href="../node/">Abrir</a>
           </article>
         </div>
       </section>
@@ -390,7 +390,7 @@
         <div class="patcher-layout">
           <div>
             <article class="panel game-card">
-              <img src="./media/smw2025-cover.png" alt="Super Mario World 2025" />
+              <img src="../media/smw2025-cover.png" alt="Super Mario World 2025" />
               <div>
                 <h2>Super Mario World 2025</h2>
                 <p class="muted">Hack distribuido como parche BPS. Descarga el parche oficial, selecciona tu ROM base limpia y genera el resultado localmente.</p>
@@ -426,7 +426,7 @@
             <h2>Vista previa</h2>
             <div class="video-frame">
               <video controls poster="./media/smw2025-cover.png" preload="metadata">
-                <source src="./media/smw2025-demo.mp4" type="video/mp4" />
+                <source src="../media/smw2025-demo.mp4" type="video/mp4" />
               </video>
             </div>
           </article>
@@ -481,7 +481,7 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
           <article class="panel">
             <h2>Manifest JSON</h2>
             <p class="muted">Archivo publico para versiones, rutas, capacidades y politicas del sistema.</p>
-            <a class="button primary" href="./arkaios-wii-manifest.json">Abrir JSON</a>
+            <a class="button primary" href="../arkaios-wii-manifest.json">Abrir JSON</a>
           </article>
           <article class="panel">
             <h2>Politica de descargas</h2>
@@ -519,7 +519,7 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
       }
 
       async function loadManifest() {
-        const response = await fetch("./arkaios-wii-manifest.json", { cache: "no-store" });
+        const response = await fetch("../arkaios-wii-manifest.json", { cache: "no-store" });
         const manifest = await response.json();
         const version = document.getElementById("version");
         const channel = document.getElementById("channel");

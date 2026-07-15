@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build && node scripts/prepare-sites-build.mjs",
+    "pages": "npm run build && node scripts/prepare-github-pages.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "node-server": "node server/arkaios-node-server.mjs",
     "mcp-server": "node mcp/arkaios-wii-mcp-server.mjs"

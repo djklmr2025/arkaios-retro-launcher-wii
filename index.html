@@ -13,14 +13,13 @@
         --text: #f3f5f7;
         --muted: #aeb7c2;
         --line: #343c46;
-        --blue: #5b9cff;
         --green: #63d18c;
-        --amber: #f0be65;
+        --blue: #5b9cff;
+        --red: #e53935;
+        --yellow: #f7c843;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
@@ -45,37 +44,30 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 22px 0;
+        padding: 22px 0 14px;
       }
 
-      h1,
-      h2,
-      p {
-        margin-top: 0;
-      }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin-bottom: 4px; font-size: 28px; }
+      h2 { margin-bottom: 12px; font-size: 20px; }
+      h3 { margin-bottom: 10px; font-size: 15px; }
+      .muted { color: var(--muted); }
 
-      h1 {
-        margin-bottom: 4px;
-        font-size: 28px;
-      }
-
-      h2 {
-        margin-bottom: 12px;
-        font-size: 18px;
-      }
-
-      .muted {
-        color: var(--muted);
-      }
-
-      .actions {
+      .actions,
+      .nav {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
       }
 
+      .nav {
+        border-top: 1px solid var(--line);
+        padding: 12px 0;
+      }
+
       a.button,
-      button {
+      button,
+      .nav a {
         display: inline-flex;
         align-items: center;
         min-height: 38px;
@@ -89,19 +81,30 @@
         cursor: pointer;
       }
 
-      a.button.primary {
+      a.button.primary,
+      .nav a.active {
         border-color: #477dcc;
         background: #24466e;
       }
 
-      main {
-        padding: 26px 0 36px;
-      }
+      main { padding: 26px 0 36px; }
+
+      .page { display: none; }
+      body[data-page="home"] #page-home,
+      body[data-page="panel"] #page-panel,
+      body[data-page="convertidor"] #page-convertidor,
+      body[data-page="sync"] #page-sync,
+      body[data-page="node"] #page-node,
+      body[data-page="manifest"] #page-manifest { display: block; }
 
       .grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
+      }
+
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .panel {
@@ -111,72 +114,20 @@
         padding: 16px;
       }
 
-      .wide {
-        grid-column: span 2;
-      }
+      .wide { grid-column: span 2; }
+      .full { grid-column: 1 / -1; }
 
-      .full {
-        grid-column: 1 / -1;
-      }
-
-      .patcher-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-        gap: 16px;
-      }
-
-      .drop-row {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin: 14px 0;
-      }
-
-      .file-box {
+      .hero {
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #12161a;
-        padding: 12px;
+        background: #151a20;
+        padding: 22px;
+        margin-bottom: 14px;
       }
 
-      .file-box label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      input[type="file"] {
-        width: 100%;
-        color: var(--text);
-      }
-
-      .patcher-result {
-        min-height: 44px;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        background: #0c0e11;
-        padding: 10px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .video-frame {
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #0c0e11;
-        aspect-ratio: 9 / 16;
-        max-height: 560px;
-        width: min(100%, 340px);
-        margin: 0 auto;
-      }
-
-      .video-frame video {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+      .hero.patch {
+        border-color: #684c16;
+        background: linear-gradient(135deg, #16324a 0%, #1d2228 52%, #3b1715 100%);
       }
 
       .status {
@@ -202,10 +153,7 @@
         font-size: 12px;
       }
 
-      code,
-      pre {
-        font-family: Consolas, "Courier New", monospace;
-      }
+      code, pre { font-family: Consolas, "Courier New", monospace; }
 
       pre {
         overflow: auto;
@@ -224,8 +172,7 @@
         font-size: 14px;
       }
 
-      th,
-      td {
+      th, td {
         border-bottom: 1px solid var(--line);
         padding: 8px;
         text-align: left;
@@ -236,6 +183,88 @@
         font-weight: 600;
       }
 
+      .patcher-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+        gap: 18px;
+      }
+
+      .game-card {
+        display: grid;
+        grid-template-columns: 170px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .game-card img {
+        width: 100%;
+        border: 2px solid var(--yellow);
+        border-radius: 8px;
+        background: #0c0e11;
+      }
+
+      .drop-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 14px 0;
+      }
+
+      .file-box {
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        background: #12161a;
+        padding: 12px;
+      }
+
+      .file-box label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      input[type="file"] {
+        width: 100%;
+        color: var(--text);
+      }
+
+      #apply-bps {
+        border-color: #9e231e;
+        background: var(--red);
+        color: white;
+        font-weight: bold;
+      }
+
+      .patcher-result {
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #0c0e11;
+        padding: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 12px;
+      }
+
+      .video-frame {
+        overflow: hidden;
+        border: 2px solid var(--yellow);
+        border-radius: 10px;
+        background: #0c0e11;
+        aspect-ratio: 9 / 16;
+        max-height: 620px;
+        width: min(100%, 360px);
+        margin: 0 auto;
+      }
+
+      .video-frame video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
       footer {
         border-top: 1px solid var(--line);
         color: var(--muted);
@@ -244,101 +273,135 @@
       }
 
       @media (max-width: 860px) {
-        .top {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
+        .top { align-items: flex-start; flex-direction: column; }
         .grid,
+        .grid.two,
         .status,
         .patcher-layout,
-        .drop-row {
-          grid-template-columns: 1fr;
-        }
-
-        .wide {
-          grid-column: auto;
-        }
+        .game-card,
+        .drop-row { grid-template-columns: 1fr; }
+        .wide { grid-column: auto; }
       }
     </style>
   </head>
-  <body>
+  <body data-page="home">
     <header>
       <div class="wrap top">
         <div>
           <h1>ARKAIOS Retro Launcher Wii</h1>
-          <p class="muted">Panel remoto para sincronizacion, manifest y preparacion de USB/SD para Wii.</p>
+          <p class="muted">Panel remoto, patcher local, Wii node, MCP y rutas de sincronizacion para Wii.</p>
         </div>
         <div class="actions">
-          <a class="button primary" href="./arkaios-wii-manifest.json">Manifest JSON</a>
+          <a class="button primary" href="./manifest/">Manifest</a>
           <a class="button" href="https://github.com/djklmr2025/arkaios-retro-launcher-wii">GitHub</a>
         </div>
       </div>
+      <nav class="wrap nav" aria-label="Secciones">
+        <a data-nav="home" href="./">Inicio</a>
+        <a data-nav="panel" href="./panel/">Panel</a>
+        <a data-nav="convertidor" href="./convertidor/">Convertidor</a>
+        <a data-nav="sync" href="./sync/">Sync</a>
+        <a data-nav="node" href="./node/">Wii Node</a>
+        <a data-nav="manifest" href="./manifest/">Manifest</a>
+      </nav>
     </header>
 
     <main class="wrap">
-      <section class="grid">
-        <article class="panel wide">
-          <h2>Flujo De Sincronizacion</h2>
-          <pre id="sync-command">powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -InstallMissingEmulators -CreateCatalog -CreatePlaylists -SyncThumbnails</pre>
-        </article>
+      <section class="page" id="page-home">
+        <div class="hero">
+          <h2>Un punto de control para preparar y operar ARKAIOS en Wii</h2>
+          <p class="muted">Cada modulo tiene su propia direccion web para que puedas compartir solo lo que corresponde: convertidor, panel, sincronizacion, node/MCP o manifest.</p>
+          <div class="actions">
+            <a class="button primary" href="./convertidor/">Abrir convertidor</a>
+            <a class="button" href="./panel/">Ver panel tecnico</a>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="panel">
+            <h3>Convertidor</h3>
+            <p class="muted">Aplica parches BPS localmente en navegador. No sube ROMs ni genera archivos en servidor.</p>
+            <a class="button" href="./convertidor/">Abrir</a>
+          </article>
+          <article class="panel">
+            <h3>Sincronizacion</h3>
+            <p class="muted">Comandos y rutas para catalogos, thumbnails, playlists y save sync.</p>
+            <a class="button" href="./sync/">Abrir</a>
+          </article>
+          <article class="panel">
+            <h3>Wii Node / MCP</h3>
+            <p class="muted">Servidor local, heartbeat, catalog upload y conexion para agentes compatibles.</p>
+            <a class="button" href="./node/">Abrir</a>
+          </article>
+        </div>
+      </section>
 
-        <article class="panel">
-          <h2>Estado Del Proyecto</h2>
-          <p><b>Version web:</b> <span id="version">cargando</span></p>
-          <p><b>Canal:</b> <span id="channel">cargando</span></p>
-          <p><b>Repo:</b> <span class="muted">djklmr2025/arkaios-retro-launcher-wii</span></p>
-        </article>
+      <section class="page" id="page-panel">
+        <div class="grid">
+          <article class="panel wide">
+            <h2>Flujo De Sincronizacion</h2>
+            <pre id="sync-command">powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -InstallMissingEmulators -CreateCatalog -CreatePlaylists -SyncThumbnails</pre>
+          </article>
 
-        <article class="panel wide">
-          <h2>Rutas Esperadas En La USB</h2>
-          <div class="status" id="paths"></div>
-        </article>
+          <article class="panel">
+            <h2>Estado Del Proyecto</h2>
+            <p><b>Version web:</b> <span id="version">cargando</span></p>
+            <p><b>Canal:</b> <span id="channel">cargando</span></p>
+            <p><b>Repo:</b> <span class="muted">djklmr2025/arkaios-retro-launcher-wii</span></p>
+          </article>
 
-        <article class="panel">
-          <h2>Politica</h2>
-          <p class="muted">El sistema descarga homebrew, emuladores y metadatos permitidos. No descarga ROMs comerciales ni automatiza exploits.</p>
-        </article>
+          <article class="panel wide">
+            <h2>Rutas Esperadas En La USB</h2>
+            <div class="status" id="paths"></div>
+          </article>
 
-        <article class="panel wide">
-          <h2>Launchers Compatibles</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Sistema</th>
-                <th>Motor</th>
-                <th>Ruta</th>
-              </tr>
-            </thead>
-            <tbody id="launchers"></tbody>
-          </table>
-        </article>
+          <article class="panel">
+            <h2>Politica</h2>
+            <p class="muted">El sistema descarga homebrew, emuladores y metadatos permitidos. No descarga ROMs comerciales ni automatiza exploits.</p>
+          </article>
 
-        <article class="panel">
-          <h2>Futuras Alineaciones</h2>
-          <p class="muted">Este panel servira como punto estable para publicar manifest, versiones, checksums, paquetes homebrew compatibles y reglas de sincronizacion de saves.</p>
-        </article>
+          <article class="panel wide">
+            <h2>Launchers Compatibles</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Sistema</th>
+                  <th>Motor</th>
+                  <th>Ruta</th>
+                </tr>
+              </thead>
+              <tbody id="launchers"></tbody>
+            </table>
+          </article>
 
-        <article class="panel">
-          <h2>Save Sync</h2>
-          <p><b>Mirror local:</b></p>
-          <pre>C:\ARKAIOS\arkaios-wii-sync</pre>
-          <p class="muted" style="margin-top: 10px;">Copia archivos nuevos o mas recientes entre la USB y el mirror local.</p>
-        </article>
+          <article class="panel">
+            <h2>Futuras Alineaciones</h2>
+            <p class="muted">Este panel sirve como punto estable para publicar manifest, versiones, checksums, paquetes homebrew compatibles y reglas de sincronizacion de saves.</p>
+          </article>
+        </div>
+      </section>
 
-        <article class="panel wide">
-          <h2>Wii Node</h2>
-          <pre>npm run node-server
-powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -Heartbeat
-powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -UploadCatalog</pre>
-        </article>
-
-        <article class="panel full" id="patcher">
+      <section class="page" id="page-convertidor">
+        <div class="hero patch">
           <h2>Crea Tu ROM Hack Local</h2>
-          <div class="patcher-layout">
-            <div>
-              <p class="muted">Aplica un parche BPS a tu copia personal sin subir archivos al servidor. La ROM base y la ROM generada permanecen en tu navegador.</p>
-              <p class="muted">El constructor valida tamano y CRC32 de la ROM base antes de generar el archivo final. Si la copia no coincide, no se crea una ROM incorrecta.</p>
+          <p class="muted">Aplica el parche a tu copia personal desde el navegador. La ROM base y el archivo generado nunca salen de tu equipo.</p>
+        </div>
+
+        <div class="patcher-layout">
+          <div>
+            <article class="panel game-card">
+              <img src="./media/smw2025-cover.png" alt="Super Mario World 2025" />
+              <div>
+                <h2>Super Mario World 2025</h2>
+                <p class="muted">Hack distribuido como parche BPS. Descarga el parche oficial, selecciona tu ROM base limpia y genera el resultado localmente.</p>
+                <div class="actions">
+                  <a class="button primary" href="https://dl.smwcentral.net/39482/Super%20Mario%20World%202025.zip" rel="noopener">Descargar parche oficial</a>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel" style="margin-top: 14px;">
+              <h2>Constructor local</h2>
+              <p class="muted">El constructor valida tamano y CRC32 de la ROM base antes de generar el archivo final. Si la copia no coincide, se detiene.</p>
               <div class="drop-row">
                 <div class="file-box">
                   <label for="rom-file">ROM base limpia (.sfc/.smc)</label>
@@ -352,20 +415,86 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
               <div class="actions">
                 <button id="apply-bps" type="button">Generar ROM parcheada</button>
                 <button id="clear-patcher" type="button">Limpiar</button>
-                <a class="button" href="https://dl.smwcentral.net/39482/Super%20Mario%20World%202025.zip" rel="noopener">Descargar parche oficial</a>
               </div>
-              <p class="muted" style="margin-top: 12px;">No se incluye ni se hospeda la ROM comercial. Usa solamente una copia que puedas usar legalmente.</p>
               <div class="patcher-result" id="patcher-status">Esperando ROM base y parche BPS.</div>
-            </div>
-            <div>
-              <div class="video-frame">
-                <video controls poster="" preload="metadata">
-                  <source src="./media/smw2025-demo.mp4" type="video/mp4" />
-                </video>
-              </div>
-            </div>
+              <p class="muted" style="margin-top: 12px;">No se incluye ni se hospeda la ROM comercial. Usa solamente una copia que puedas usar legalmente.</p>
+            </article>
           </div>
-        </article>
+
+          <article class="panel">
+            <h2>Vista previa</h2>
+            <div class="video-frame">
+              <video controls poster="./media/smw2025-cover.png" preload="metadata">
+                <source src="./media/smw2025-demo.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-sync">
+        <div class="grid two">
+          <article class="panel">
+            <h2>Actualizar USB/SD</h2>
+            <pre>powershell -ExecutionPolicy Bypass -File .\Sync-RetroArchWiiMedia.ps1 -WiiRoot D:\ -InstallMissingEmulators -CreateCatalog -CreatePlaylists -SyncThumbnails</pre>
+          </article>
+          <article class="panel">
+            <h2>Save Sync</h2>
+            <p><b>Mirror local:</b></p>
+            <pre>C:\ARKAIOS\arkaios-wii-sync</pre>
+            <p class="muted" style="margin-top: 10px;">Copia archivos nuevos o mas recientes entre la USB y el mirror local.</p>
+          </article>
+          <article class="panel full">
+            <h2>Rutas Esperadas En La USB</h2>
+            <div class="status" id="paths-sync"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-node">
+        <div class="grid two">
+          <article class="panel">
+            <h2>Servidor local</h2>
+            <pre>npm run node-server</pre>
+          </article>
+          <article class="panel">
+            <h2>Registrar Wii</h2>
+            <pre>powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -Heartbeat
+powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -UploadCatalog</pre>
+          </article>
+          <article class="panel">
+            <h2>MCP</h2>
+            <pre>npm run mcp-server</pre>
+            <p class="muted" style="margin-top: 10px;">Expone health, manifest, nodos y subida de catalogo a clientes MCP compatibles.</p>
+          </article>
+          <article class="panel">
+            <h2>Importador local</h2>
+            <pre>Importar_Mis_Roms.bat</pre>
+            <p class="muted" style="margin-top: 10px;">Cataloga archivos locales del usuario como metadata; no descarga ni comparte ROMs.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-manifest">
+        <div class="grid two">
+          <article class="panel">
+            <h2>Manifest JSON</h2>
+            <p class="muted">Archivo publico para versiones, rutas, capacidades y politicas del sistema.</p>
+            <a class="button primary" href="./arkaios-wii-manifest.json">Abrir JSON</a>
+          </article>
+          <article class="panel">
+            <h2>Politica de descargas</h2>
+            <p class="muted">Se permite homebrew, metadata, covers y parches. No se enlazan ni distribuyen ROMs comerciales.</p>
+          </article>
+          <article class="panel full">
+            <h2>Endpoints</h2>
+            <pre>/health
+/api/wii/heartbeat
+/api/wii/catalog
+/api/wii/nodes
+/api/wii/manifest</pre>
+          </article>
+        </div>
       </section>
     </main>
 
@@ -374,33 +503,47 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
     </footer>
 
     <script>
-      async function loadManifest() {
-        const response = await fetch("./arkaios-wii-manifest.json", { cache: "no-store" });
-        const manifest = await response.json();
-        document.getElementById("version").textContent = manifest.version;
-        document.getElementById("channel").textContent = manifest.channel;
+      const page = document.body.dataset.page || "home";
+      document.querySelector(`[data-nav="${page}"]`)?.classList.add("active");
 
-        const paths = document.getElementById("paths");
-        paths.innerHTML = "";
-        manifest.paths.forEach((path) => {
+      function renderPaths(container, paths) {
+        if (!container) return;
+        container.innerHTML = "";
+        paths.forEach((path) => {
           const item = document.createElement("div");
           item.className = "pill";
           item.innerHTML = `<b>${path.label}</b><span>${path.path}</span>`;
-          paths.appendChild(item);
-        });
-
-        const launchers = document.getElementById("launchers");
-        launchers.innerHTML = "";
-        manifest.launchers.forEach((launcher) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `<td>${launcher.system}</td><td>${launcher.name}</td><td><code>${launcher.path}</code></td>`;
-          launchers.appendChild(row);
+          container.appendChild(item);
         });
       }
 
+      async function loadManifest() {
+        const response = await fetch("./arkaios-wii-manifest.json", { cache: "no-store" });
+        const manifest = await response.json();
+        const version = document.getElementById("version");
+        const channel = document.getElementById("channel");
+        if (version) version.textContent = manifest.version;
+        if (channel) channel.textContent = manifest.channel;
+
+        renderPaths(document.getElementById("paths"), manifest.paths);
+        renderPaths(document.getElementById("paths-sync"), manifest.paths);
+
+        const launchers = document.getElementById("launchers");
+        if (launchers) {
+          launchers.innerHTML = "";
+          manifest.launchers.forEach((launcher) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${launcher.system}</td><td>${launcher.name}</td><td><code>${launcher.path}</code></td>`;
+            launchers.appendChild(row);
+          });
+        }
+      }
+
       loadManifest().catch(() => {
-        document.getElementById("version").textContent = "manifest no disponible";
-        document.getElementById("channel").textContent = "offline";
+        const version = document.getElementById("version");
+        const channel = document.getElementById("channel");
+        if (version) version.textContent = "manifest no disponible";
+        if (channel) channel.textContent = "offline";
       });
     </script>
     <script type="module" src="./patcher.js"></script>
