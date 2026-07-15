@@ -10,6 +10,7 @@ Thumbs.db
 *.map
 build/
 dist/
+node_modules/
 release/
 _local/
 secrets/

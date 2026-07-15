@@ -1,0 +1,61 @@
+{
+  "schema": "arkaios.wii.launcher.manifest.v1",
+  "version": "0.1.0",
+  "channel": "alpha",
+  "updated": "2026-07-15",
+  "repository": "https://github.com/djklmr2025/arkaios-retro-launcher-wii",
+  "paths": [
+    {
+      "label": "Wii WBFS",
+      "path": "D:\\wbfs"
+    },
+    {
+      "label": "GameCube",
+      "path": "D:\\games"
+    },
+    {
+      "label": "ROMs Retro",
+      "path": "D:\\Roms"
+    },
+    {
+      "label": "Catalogo ARKAIOS",
+      "path": "D:\\retroarch\\arkaios\\catalog.json"
+    },
+    {
+      "label": "Playlists RetroArch",
+      "path": "D:\\retroarch\\playlists"
+    }
+  ],
+  "launchers": [
+    {
+      "system": "Nintendo Wii",
+      "name": "USB Loader GX",
+      "path": "D:\\apps\\usbloader_gx\\boot.dol"
+    },
+    {
+      "system": "Nintendo GameCube",
+      "name": "Nintendont",
+      "path": "D:\\apps\\Nintendont\\boot.dol"
+    },
+    {
+      "system": "Nintendo 64",
+      "name": "Not64",
+      "path": "D:\\apps\\not64\\boot.dol"
+    },
+    {
+      "system": "Nintendo DS",
+      "name": "DeSmuME Wii",
+      "path": "D:\\apps\\DeSmuMEWii\\boot.dol"
+    },
+    {
+      "system": "Retro consoles",
+      "name": "RetroArch Wii",
+      "path": "D:\\apps\\retroarch-wii\\boot.dol"
+    }
+  ],
+  "downloads": {
+    "policy": "homebrew-and-metadata-only",
+    "commercial_roms": false,
+    "exploits": false
+  }
+}
