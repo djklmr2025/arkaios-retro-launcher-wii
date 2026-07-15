@@ -116,14 +116,12 @@ static int read_file_to_memory(const char *path, u8 **buffer, size_t *size) {
     return 1;
 }
 
-static void shutdown_for_chainload(void) {
+static void prepare_for_chainload(void) {
     fatUnmount("sd");
     fatUnmount("usb");
     WPAD_Shutdown();
-    VIDEO_SetBlack(TRUE);
     VIDEO_Flush();
     VIDEO_WaitVSync();
-    SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 }
 
 static int try_app_path(const char *relative, char *path, size_t path_size) {
@@ -196,7 +194,7 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
 
     *(vu32 *)0x800000F8 = 0x0E7BE2C0;
     *(vu32 *)0x800000FC = 0x2B73A840;
-    shutdown_for_chainload();
+    prepare_for_chainload();
     entry();
     return 1;
 }
