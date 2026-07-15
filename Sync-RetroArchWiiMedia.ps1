@@ -17,6 +17,12 @@ $ErrorActionPreference = "Stop"
 
 $thumbnailBaseUrl = "http://thumbnails.libretro.com"
 $legalContentBaseUrl = "https://buildbot.libretro.com/assets/cores"
+$dolphinSysRoots = @(
+    "C:\ARKAIOS\_tools\dolphin\Dolphin-x64\Sys",
+    "$env:ProgramFiles\Dolphin\Sys",
+    "$env:APPDATA\Dolphin Emulator\Sys"
+)
+$wiiTitleDb = $null
 
 $emulatorPackages = @(
     @{
@@ -152,6 +158,45 @@ function Convert-ToRetroPath([string]$FullName) {
     return "$DevicePrefix/$relative"
 }
 
+function Get-WiiTitleDb {
+    if ($script:wiiTitleDb) {
+        return $script:wiiTitleDb
+    }
+
+    $script:wiiTitleDb = @{}
+    foreach ($root in $dolphinSysRoots) {
+        if (-not (Test-Path -LiteralPath $root)) {
+            continue
+        }
+        foreach ($fileName in @("wiitdb-es.txt", "wiitdb-en.txt")) {
+            $path = Join-Path $root $fileName
+            if (-not (Test-Path -LiteralPath $path)) {
+                continue
+            }
+            Get-Content -LiteralPath $path -ErrorAction SilentlyContinue | ForEach-Object {
+                if ($_ -match "^([A-Z0-9]{4,6})\s*=\s*(.+)$") {
+                    $id = $matches[1]
+                    if (-not $script:wiiTitleDb.ContainsKey($id)) {
+                        $script:wiiTitleDb[$id] = $matches[2].Trim()
+                    }
+                }
+            }
+        }
+    }
+
+    return $script:wiiTitleDb
+}
+
+function Get-RealWiiTitle([string]$GameId, [string]$Fallback) {
+    if ($GameId) {
+        $db = Get-WiiTitleDb
+        if ($db.ContainsKey($GameId)) {
+            return $db[$GameId]
+        }
+    }
+    return $Fallback
+}
+
 function Get-CorePath($system) {
     foreach ($core in $system.Cores) {
         $candidate = Join-Path $WiiRoot "apps\retroarch-wii\$core"
@@ -258,13 +303,15 @@ function Get-ExternalEntries {
                 }
 
                 $appFullPath = Join-Path $WiiRoot $launcher.AppPath
+                $gameId = Get-GameIdFromPath $_.FullName
+                $label = Get-RealWiiTitle $gameId $label
                 $entries.Add([pscustomobject]@{
                     Path = $_.FullName
                     Label = $label
                     System = $launcher.Name
                     Launcher = $launcher.Launcher
                     LauncherPath = if (Test-Path -LiteralPath $appFullPath) { Convert-ToRetroPath $appFullPath } else { "MISSING: $($launcher.AppPath)" }
-                    GameId = Get-GameIdFromPath $_.FullName
+                    GameId = $gameId
                     Source = "external"
                 })
             }
@@ -272,6 +319,96 @@ function Get-ExternalEntries {
     }
 
     return $entries | Sort-Object System, Label, Path -Unique
+}
+
+function Get-CatalogEntryKey($Entry) {
+    if ($Entry.GameId) {
+        return [string]$Entry.GameId
+    }
+    return [System.IO.Path]::GetFileName([string]$Entry.Path)
+}
+
+function Convert-ToEntryArray($Entries) {
+    if ($null -eq $Entries) {
+        return @()
+    }
+    $items = @($Entries)
+    if ($items.Count -eq 1 -and $items[0] -is [System.Array]) {
+        return @($items[0])
+    }
+    return $items
+}
+
+function Write-ScanHistory($PreviousEntries, $CurrentEntries, [string]$TargetDir) {
+    $PreviousEntries = @(Convert-ToEntryArray $PreviousEntries)
+    $CurrentEntries = @(Convert-ToEntryArray $CurrentEntries)
+    $historyDir = Join-Path $TargetDir "history"
+    $latestTarget = Join-Path $TargetDir "history-latest.txt"
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $datedTarget = Join-Path $historyDir "history-$stamp.txt"
+
+    $previousByKey = @{}
+    foreach ($entry in @($PreviousEntries)) {
+        $previousByKey[(Get-CatalogEntryKey $entry)] = $entry
+    }
+
+    $currentByKey = @{}
+    foreach ($entry in @($CurrentEntries)) {
+        $currentByKey[(Get-CatalogEntryKey $entry)] = $entry
+    }
+
+    $added = @($currentByKey.Keys | Where-Object { -not $previousByKey.ContainsKey($_) } | Sort-Object)
+    $removed = @($previousByKey.Keys | Where-Object { -not $currentByKey.ContainsKey($_) } | Sort-Object)
+    $changed = @($currentByKey.Keys | Where-Object {
+        $previousByKey.ContainsKey($_) -and (
+            $previousByKey[$_].Label -ne $currentByKey[$_].Label -or
+            $previousByKey[$_].System -ne $currentByKey[$_].System -or
+            $previousByKey[$_].Launcher -ne $currentByKey[$_].Launcher -or
+            $previousByKey[$_].LauncherPath -ne $currentByKey[$_].LauncherPath
+        )
+    } | Sort-Object)
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("ARKAIOS Wii AutoScan")
+    $lines.Add("Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+    $lines.Add("WiiRoot: $WiiRoot")
+    $lines.Add("Total detectado: $($CurrentEntries.Count)")
+    $lines.Add("Nuevos: $($added.Count)")
+    $lines.Add("Removidos: $($removed.Count)")
+    $lines.Add("Actualizados: $($changed.Count)")
+    $lines.Add("")
+    $lines.Add("[Juegos detectados]")
+    foreach ($entry in ($CurrentEntries | Sort-Object System, Label)) {
+        $key = Get-CatalogEntryKey $entry
+        $lines.Add("$key | $($entry.Label) | $($entry.System) | $($entry.Launcher) | $($entry.LauncherPath)")
+    }
+    $lines.Add("")
+    $lines.Add("[Nuevos]")
+    foreach ($key in $added) {
+        $entry = $currentByKey[$key]
+        $lines.Add("$key | $($entry.Label) | $($entry.System)")
+    }
+    $lines.Add("")
+    $lines.Add("[Removidos]")
+    foreach ($key in $removed) {
+        $entry = $previousByKey[$key]
+        $lines.Add("$key | $($entry.Label) | $($entry.System)")
+    }
+    $lines.Add("")
+    $lines.Add("[Actualizados]")
+    foreach ($key in $changed) {
+        $before = $previousByKey[$key]
+        $after = $currentByKey[$key]
+        $lines.Add("$key | antes='$($before.Label)'/$($before.Launcher) | ahora='$($after.Label)'/$($after.Launcher)")
+    }
+
+    if (-not $WhatIf) {
+        New-Item -ItemType Directory -Force -Path $historyDir | Out-Null
+        $lines | Set-Content -LiteralPath $latestTarget -Encoding UTF8
+        $lines | Set-Content -LiteralPath $datedTarget -Encoding UTF8
+    }
+
+    Write-Host "Historial actualizado: $latestTarget"
 }
 
 function Get-StandaloneRoute($Entry) {
@@ -432,6 +569,15 @@ function Write-Catalog {
     $entries = @(Get-AllEntries)
     $targetDir = Join-Path $WiiRoot "retroarch\arkaios"
     $target = Join-Path $targetDir "catalog.json"
+    $previousEntries = @()
+    if (Test-Path -LiteralPath $target) {
+        try {
+            $previousEntries = @(Convert-ToEntryArray (Get-Content -LiteralPath $target -Raw | ConvertFrom-Json))
+        }
+        catch {
+            $previousEntries = @()
+        }
+    }
     $metadataTarget = Join-Path $targetDir "metadata.txt"
     $metadataLines = New-Object System.Collections.Generic.List[string]
     $metadataLines.Add("# key|title|system|launcher|cover")
@@ -461,6 +607,7 @@ function Write-Catalog {
         $entries | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $target -Encoding UTF8
         $metadataLines | Set-Content -LiteralPath $metadataTarget -Encoding ASCII
     }
+    Write-ScanHistory -PreviousEntries $previousEntries -CurrentEntries $entries -TargetDir $targetDir
     Write-Host "Catalogo creado: $target"
     Write-Host "Metadata creada: $metadataTarget"
 }
