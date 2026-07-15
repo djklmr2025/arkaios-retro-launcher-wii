@@ -8,11 +8,12 @@ Estado actual:
 - Escanea `sd:/Roms`, `usb:/Roms`, `sd:/wbfs`, `usb:/wbfs`, `sd:/games` y `usb:/games`.
 - Detecta plataforma por extension: Wii, GameCube, N64, NDS y varios sistemas RetroArch.
 - Muestra una lista basica en pantalla.
+- Para SNES muestra `Snes9x GX` como launcher recomendado.
 - Deja preparado el punto donde se debe integrar el chainloader/arranque del core de RetroArch.
 
 Limitacion honesta:
 
-La maquina actual no tiene devkitPro/devkitPPC instalado, asi que no se genero `boot.dol` todavia. Para compilar hace falta instalar devkitPro y el grupo `wii-dev`. La guia oficial indica que devkitPro usa `pacman` para gestionar toolchains y librerias.
+Ya compila con devkitPro/devkitPPC y genera `arkaios-wii-launcher.dol`. La primera fase instalada en la SD lista juegos y crea un archivo handoff con el launcher/ROM seleccionado. El arranque directo de otro `.dol` queda para la siguiente fase porque debe validarse en hardware Wii por loader.
 
 Referencia oficial:
 

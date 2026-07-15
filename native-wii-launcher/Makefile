@@ -1,3 +1,5 @@
+.SUFFIXES:
+
 ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC no esta definido. Instala devkitPro/wii-dev primero.")
 endif
@@ -10,39 +12,65 @@ SOURCES := source
 DATA := data
 INCLUDES :=
 
-LIBS := -lwiiuse -lbte -logc -lm
+CFLAGS := -g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CXXFLAGS := $(CFLAGS)
+LDFLAGS := -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+
+LIBS := -lfat -lwiiuse -lbte -logc -lm
 LIBDIRS :=
 
-CFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-OFILES := $(CFILES:.c=.o)
+ifneq ($(BUILD),$(notdir $(CURDIR)))
 
 export OUTPUT := $(CURDIR)/$(TARGET)
 export VPATH := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(foreach dir,$(DATA),$(CURDIR)/$(dir))
 export DEPSDIR := $(CURDIR)/$(BUILD)
 
-export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+CFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+sFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+SFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
+BINFILES := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+ifeq ($(strip $(CPPFILES)),)
+export LD := $(CC)
+else
+export LD := $(CXX)
+endif
+
+export OFILES_BIN := $(addsuffix .o,$(BINFILES))
+export OFILES_SOURCES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(sFILES:.s=.o) $(SFILES:.S=.o)
+export OFILES := $(OFILES_BIN) $(OFILES_SOURCES)
+
+export INCLUDE := $(foreach dir,$(INCLUDES),-iquote $(CURDIR)/$(dir)) \
 	$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-	-I$(CURDIR)/$(BUILD)
+	-I$(CURDIR)/$(BUILD) \
+	-I$(LIBOGC_INC)
 
-export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
+	-L$(LIBOGC_LIB)
 
-export CFLAGS := -g -O2 -Wall $(MACHDEP) $(INCLUDE)
-export LDFLAGS := -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
-
-.PHONY: all clean
-
-all: $(BUILD) $(OUTPUT).dol
+.PHONY: $(BUILD) clean install
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-
-$(OUTPUT).dol: $(OUTPUT).elf
-	$(OBJCOPY) -O binary $< $@
-
-$(OUTPUT).elf: $(OFILES)
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 clean:
-	@rm -rf $(BUILD) $(OUTPUT).elf $(OUTPUT).dol $(OUTPUT).elf.map
+	@echo clean ...
+	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol
 
--include $(DEPSDIR)/*.d
+install: all
+	@mkdir -p /d/apps/arkaios-wii-launcher
+	@cp $(OUTPUT).dol /d/apps/arkaios-wii-launcher/boot.dol
+	@cp meta.xml /d/apps/arkaios-wii-launcher/meta.xml
 
+else
+
+DEPENDS := $(OFILES:.o=.d)
+
+$(OUTPUT).dol: $(OUTPUT).elf
+$(OUTPUT).elf: $(OFILES)
+
+-include $(DEPENDS)
+
+endif

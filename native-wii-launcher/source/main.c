@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define MAX_ROMS 512
-#define MAX_PATH_LEN 256
+#define MAX_PATH_LEN 512
 
 typedef struct {
     char path[MAX_PATH_LEN];
@@ -76,8 +76,8 @@ static int detect_rom(const char *file, char *system, size_t system_size, char *
     }
     if (ends_with_ci(file, ".sfc") || ends_with_ci(file, ".smc")) {
         snprintf(system, system_size, "SNES");
-        snprintf(launcher, launcher_size, "RetroArch Wii");
-        snprintf(app, app_size, "snes9x_libretro_wii.dol");
+        snprintf(launcher, launcher_size, "Snes9x GX");
+        snprintf(app, app_size, "snes9xgx");
         return 1;
     }
     if (ends_with_ci(file, ".nes")) {
