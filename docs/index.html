@@ -155,6 +155,55 @@ footer { border-top: 1px solid var(--line); color: var(--muted); padding: 18px 0
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
   gap: 18px;
 }
+
+.game-intro {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.game-intro-cover {
+  width: 100%;
+  border-radius: 10px;
+  border: 3px solid var(--mario-yellow);
+  align-self: start;
+}
+.game-intro-text .badge {
+  display: inline-block;
+  background: var(--mario-yellow);
+  color: #4a3900;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+.game-intro-text h2 { color: var(--mario-yellow); font-size: 24px; }
+.game-intro-text p { font-size: 14px; color: var(--muted); }
+.game-intro-text .video-frame { max-height: 340px; width: min(100%, 240px); margin-top: 12px; }
+.game-intro-text .mario-download { margin-top: 10px; margin-bottom: 4px; }
+
+.cta-banner {
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--mario-red) 0%, var(--mario-red-dark) 100%);
+  padding: 22px 26px;
+  margin-bottom: 18px;
+  text-align: center;
+  border: 2px solid #4a0b08;
+}
+.cta-banner h3 { color: #fff; font-size: 20px; margin: 0 0 6px; text-shadow: 1px 1px 0 #4a0b08; }
+.cta-banner p { color: #ffe9e6; margin: 0; font-size: 14px; }
+
+.full-tool { width: 100%; }
+
+@media (max-width: 720px) {
+  .game-intro { grid-template-columns: 1fr; }
+  .game-intro-text .video-frame { width: 100%; max-height: none; }
+}
 .mario-card {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -208,6 +257,27 @@ footer { border-top: 1px solid var(--line); color: var(--muted); padding: 18px 0
 .file-box.patch { border-color: var(--mario-green); }
 .file-box label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; }
 input[type="file"] { width: 100%; color: var(--text); }
+
+.patch-cover {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #12161a;
+}
+.patch-cover img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid var(--mario-yellow);
+  flex: none;
+}
+.patch-cover .patch-cover-text p { margin: 0; font-size: 13px; color: var(--muted); }
+.patch-cover .patch-cover-text strong { color: var(--text); }
 
 .mario-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
 #apply-bps {
@@ -350,63 +420,17 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
     </div>
   </section>
 
-  <!-- PESTAÑA 2: CONVERTIDOR (patcher BPS, con Mario como ejemplo destacado) -->
+  <!-- PESTAÑA 2: CONVERTIDOR (induccion al juego primero, luego la herramienta) -->
   <section class="tab-panel" id="tab-patcher">
-    <div class="mario-hero">
-      <span class="badge">Ejemplo destacado</span>
-      <h2>Convertidor de ROM Hacks (parche BPS)</h2>
-      <p>Usa este mismo convertidor con cualquier parche BPS. Aqui lo mostramos con Super Mario World 2025 como caso de ejemplo.</p>
-    </div>
 
-    <div class="mario-layout">
-      <div class="mario-card">
-        <h3>Como se usa</h3>
-        <ul class="step-list">
-          <li>
-            <span class="step-num">1</span>
-            <span class="step-text">Consigue tu ROM base limpia de Super Mario World (u otro juego compatible con el parche).
-              <span class="muted">Debes poseer legalmente tu copia. No se hospeda ninguna ROM comercial aqui.</span>
-            </span>
-          </li>
-          <li>
-            <span class="step-num">2</span>
-            <span class="step-text">Descarga el parche del hack (.bps) con el boton de abajo.</span>
-          </li>
-          <li>
-            <span class="step-num">3</span>
-            <span class="step-text">Carga ambos archivos en las casillas y presiona "Generar ROM parcheada".
-              <span class="muted">Todo el proceso ocurre en tu navegador, nada se sube al servidor.</span>
-            </span>
-          </li>
-          <li>
-            <span class="step-num">4</span>
-            <span class="step-text">El sistema valida tamano y CRC32 de la ROM base antes de generar el archivo final.</span>
-          </li>
-        </ul>
-
-        <div class="drop-row">
-          <div class="file-box rom">
-            <label for="rom-file">ROM base limpia (.sfc/.smc)</label>
-            <input id="rom-file" type="file" accept=".sfc,.smc,.bin,.rom" />
-          </div>
-          <div class="file-box patch">
-            <label for="patch-file">Parche del hack (.bps)</label>
-            <input id="patch-file" type="file" accept=".bps" />
-          </div>
-        </div>
-
-        <div class="mario-buttons">
-          <button id="apply-bps" type="button">Generar ROM parcheada</button>
-          <button id="clear-patcher" type="button">Limpiar</button>
-          <a class="button mario-download" href="https://dl.smwcentral.net/39482/Super%20Mario%20World%202025.zip" rel="noopener">Descargar parche oficial</a>
-        </div>
-
-        <div class="patcher-result" id="patcher-status">Esperando ROM base y parche BPS.</div>
-        <p class="legal-note">No se incluye ni se hospeda la ROM comercial. Usa solamente una copia que puedas usar legalmente.</p>
-      </div>
-
-      <div class="mario-card">
-        <h3>Demo en video</h3>
+    <!-- Induccion: presentacion del juego de ejemplo -->
+    <div class="game-intro">
+      <img class="game-intro-cover" src="./media/smw2025-cover.png" alt="Portada de Super Mario World 2025" />
+      <div class="game-intro-text">
+        <span class="badge">Juego de ejemplo</span>
+        <h2>Super Mario World 2025</h2>
+        <p>Un hack de Super Mario World con niveles, graficos y desafios renovados, corriendo sin problemas en tu Wii una vez parcheado. Mira la demo en video:</p>
+        <a class="button mario-download" href="https://dl.smwcentral.net/39482/Super%20Mario%20World%202025.zip" rel="noopener">Descargar parche oficial</a>
         <div class="video-frame">
           <video controls poster="" preload="metadata">
             <source src="./media/smw2025-demo.mp4" type="video/mp4" />
@@ -414,6 +438,58 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
         </div>
         <p class="video-caption">Super Mario World 2025 corriendo en Wii tras el parcheo</p>
       </div>
+    </div>
+
+    <!-- CTA hacia el convertidor -->
+    <div class="cta-banner">
+      <h3>¿Deseas tener tu version hack unica?</h3>
+      <p>Usa nuestro generador y obten una version exclusiva del juego, solo para ti.</p>
+    </div>
+
+    <!-- Herramienta: convertidor de parches BPS -->
+    <div class="mario-card full-tool">
+      <h3>Como se usa</h3>
+      <ul class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <span class="step-text">Consigue tu ROM base limpia de Super Mario World (u otro juego compatible con el parche).
+            <span class="muted">Debes poseer legalmente tu copia. No se hospeda ninguna ROM comercial aqui.</span>
+          </span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span class="step-text">Descarga el parche del hack (.bps) con el boton de abajo.</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span class="step-text">Carga ambos archivos en las casillas y presiona "Generar ROM parcheada".
+            <span class="muted">Todo el proceso ocurre en tu navegador, nada se sube al servidor.</span>
+          </span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span class="step-text">El sistema valida tamano y CRC32 de la ROM base antes de generar el archivo final.</span>
+        </li>
+      </ul>
+
+      <div class="drop-row">
+        <div class="file-box rom">
+          <label for="rom-file">ROM base limpia (.sfc/.smc)</label>
+          <input id="rom-file" type="file" accept=".sfc,.smc,.bin,.rom" />
+        </div>
+        <div class="file-box patch">
+          <label for="patch-file">Parche del hack (.bps)</label>
+          <input id="patch-file" type="file" accept=".bps" />
+        </div>
+      </div>
+
+      <div class="mario-buttons">
+        <button id="apply-bps" type="button">Generar ROM parcheada</button>
+        <button id="clear-patcher" type="button">Limpiar</button>
+      </div>
+
+      <div class="patcher-result" id="patcher-status">Esperando ROM base y parche BPS.</div>
+      <p class="legal-note">No se incluye ni se hospeda la ROM comercial. Usa solamente una copia que puedas usar legalmente.</p>
     </div>
   </section>
 
