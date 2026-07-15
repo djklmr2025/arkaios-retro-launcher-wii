@@ -11,6 +11,7 @@ Thumbs.db
 build/
 dist/
 node_modules/
+data/
 release/
 _local/
 secrets/

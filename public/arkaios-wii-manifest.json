@@ -69,5 +69,21 @@
       "D:\\Roms\\Nintendo - Super Nintendo Entertainment System\\_saves"
     ],
     "mode": "conservative-newer-file-wins"
+  },
+  "node": {
+    "device_file": "D:\\retroarch\\arkaios\\device.json",
+    "local_server": "http://127.0.0.1:8787",
+    "endpoints": {
+      "health": "/health",
+      "heartbeat": "/api/wii/heartbeat",
+      "catalog": "/api/wii/catalog",
+      "nodes": "/api/wii/nodes",
+      "manifest": "/api/wii/manifest"
+    },
+    "privacy": {
+      "uses_raw_mac": false,
+      "shares_rom_files": false,
+      "shares_catalog_metadata": true
+    }
   }
 }

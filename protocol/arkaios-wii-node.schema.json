@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://djklmr2025.github.io/arkaios-retro-launcher-wii/protocol/arkaios-wii-node.schema.json",
+  "title": "ARKAIOS Wii Node",
+  "type": "object",
+  "required": ["device_id", "name", "launcher_version", "online", "capabilities"],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "pattern": "^arkwii-[a-zA-Z0-9-]{8,}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "launcher_version": {
+      "type": "string"
+    },
+    "online": {
+      "type": "boolean"
+    },
+    "local_ip": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "catalog_summary": {
+      "type": "object",
+      "properties": {
+        "game_count": { "type": "integer", "minimum": 0 },
+        "systems": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

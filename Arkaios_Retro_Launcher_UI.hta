@@ -93,6 +93,7 @@
     var shell = new ActiveXObject("WScript.Shell");
     var scriptPath = "";
     var saveSyncPath = "";
+    var nodePath = "";
 
     function init() {
       window.resizeTo(790, 520);
@@ -101,6 +102,7 @@
       full = decodeURIComponent(full).replace(/\//g, "\\");
       scriptPath = full.replace("Arkaios_Retro_Launcher_UI.hta", "Sync-RetroArchWiiMedia.ps1");
       saveSyncPath = full.replace("Arkaios_Retro_Launcher_UI.hta", "Arkaios-SaveSync.ps1");
+      nodePath = full.replace("Arkaios_Retro_Launcher_UI.hta", "Register-ArkaiosWiiNode.ps1");
     }
 
     function ps(args) {
@@ -111,6 +113,16 @@
     function savePs(args) {
       var cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + saveSyncPath + '" -WiiRoot "D:\\" ' + args;
       shell.Run('cmd /k ' + cmd, 1, false);
+    }
+
+    function nodePs(args) {
+      var cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + nodePath + '" -WiiRoot "D:\\" ' + args;
+      shell.Run('cmd /k ' + cmd, 1, false);
+    }
+
+    function startNodeServer() {
+      var cmd = 'cmd /k ""' + scriptPath.replace("Sync-RetroArchWiiMedia.ps1", "Iniciar_Arkaios_Node_Server.bat") + '""';
+      shell.Run(cmd, 1, false);
     }
 
     function scan() {
@@ -157,6 +169,18 @@
       savePs('-ImportRom -ImportPath "' + path.replace(/"/g, '') + '" -RebuildAfterImport');
     }
 
+    function registerNode() {
+      nodePs("-Register -Status");
+    }
+
+    function heartbeatNode() {
+      nodePs("-Heartbeat -Status");
+    }
+
+    function uploadCatalogNode() {
+      nodePs("-UploadCatalog -Status");
+    }
+
     function downloadLegal() {
       var system = document.getElementById("legalSystem").value;
       var name = document.getElementById("legalName").value;
@@ -185,6 +209,10 @@
       <button onclick="backupSaves()">Respaldar saves</button>
       <button class="warn" onclick="restoreSaves()">Restaurar ultimo backup</button>
       <button onclick="importRom()">Importar ROM local</button>
+      <button onclick="startNodeServer()">Iniciar servidor nodo</button>
+      <button onclick="registerNode()">Registrar Wii Node</button>
+      <button onclick="heartbeatNode()">Enviar heartbeat</button>
+      <button onclick="uploadCatalogNode()">Subir catalogo nodo</button>
       <button onclick="listLegal()">Listar contenido legal/homebrew</button>
       <button class="warn" onclick="downloadLegal()">Descargar homebrew legal</button>
     </div>
