@@ -13,7 +13,7 @@ El sistema de consola depende de `ARKAIOS Retro Launcher Wii`, no de la web ni d
 El launcher detecta y rutea hacia homebrew ya instalado:
 
 - SNES: `apps/snes9xgx/boot.dol`
-- Wii: `apps/usbloader_gx/boot.dol`
+- Wii: `apps/USBLoader/boot.dol` via Configurable USB Loader
 - GameCube: `apps/nintendont/boot.dol`
 - N64: `apps/not64/boot.dol`
 - NDS: `apps/DeSmuMEWii/boot.dol`
