@@ -1,6 +1,8 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 #include <fat.h>
+#include <ogc/usbstorage.h>
+#include <sdcard/wiisd_io.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +25,9 @@ static RomEntry roms[MAX_ROMS];
 static int rom_count = 0;
 static int selected = 0;
 static int top = 0;
+static int sd_mounted = 0;
+static int usb_mounted = 0;
+static char sd_debug[256] = "";
 
 static void init_video(void) {
     VIDEO_Init();
@@ -180,12 +185,38 @@ static void scan_dir(const char *base) {
     closedir(dir);
 }
 
+static void collect_sd_debug(void) {
+    DIR *dir = opendir("sd:/");
+    if (!dir) {
+        snprintf(sd_debug, sizeof(sd_debug), "sd:/ no abre");
+        return;
+    }
+
+    snprintf(sd_debug, sizeof(sd_debug), "sd:/");
+    struct dirent *entry;
+    int count = 0;
+    while ((entry = readdir(dir)) != NULL && count < 4) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+            continue;
+        }
+        strncat(sd_debug, " ", sizeof(sd_debug) - strlen(sd_debug) - 1);
+        strncat(sd_debug, entry->d_name, sizeof(sd_debug) - strlen(sd_debug) - 1);
+        count++;
+    }
+    if (count == 0) {
+        strncat(sd_debug, " vacio", sizeof(sd_debug) - strlen(sd_debug) - 1);
+    }
+    closedir(dir);
+}
+
 static void draw(void) {
     printf("\x1b[2J");
     printf("\x1b[1;1HARKAIOS Retro Launcher Wii\n");
     printf("A: preparar lanzamiento | HOME: salir | ROMs: %d\n\n", rom_count);
 
     if (rom_count == 0) {
+        printf("SD: %s | USB: %s\n", sd_mounted ? "montada" : "no montada", usb_mounted ? "montada" : "no montada");
+        printf("%s\n", sd_debug);
         printf("No se encontraron ROMs compatibles en sd:/Roms o usb:/Roms.\n");
         printf("Usa la herramienta de Windows para crear playlists y portadas.\n");
         return;
@@ -225,7 +256,9 @@ int main(int argc, char **argv) {
     (void)argv;
 
     init_video();
-    fatInitDefault();
+    sd_mounted = fatMountSimple("sd", &__io_wiisd) ? 1 : 0;
+    usb_mounted = fatMountSimple("usb", &__io_usbstorage) ? 1 : 0;
+    collect_sd_debug();
 
     scan_dir("sd:/Roms");
     scan_dir("usb:/Roms");
