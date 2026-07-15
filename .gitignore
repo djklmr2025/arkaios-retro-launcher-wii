@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.zip
+*.7z
+*.dol
+*.elf
+*.map
+build/
+dist/
+release/
+_local/
+secrets/
+.env
+.env.*

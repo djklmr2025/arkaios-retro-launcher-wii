@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+  <meta http-equiv="x-ua-compatible" content="IE=11">
+  <title>ARKAIOS Retro Launcher Wii</title>
+  <hta:application
+    id="ArkaiosRetroLauncher"
+    applicationname="ARKAIOS Retro Launcher Wii"
+    border="thin"
+    caption="yes"
+    maximizebutton="no"
+    minimizebutton="yes"
+    scroll="no"
+    singleinstance="yes"
+    windowstate="normal" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #111315;
+      color: #f1f3f4;
+    }
+    .wrap {
+      width: 760px;
+      padding: 22px;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 650;
+    }
+    p {
+      margin: 0 0 18px;
+      color: #b7bec7;
+      line-height: 1.4;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    button {
+      height: 44px;
+      border: 1px solid #3b4652;
+      border-radius: 6px;
+      background: #20262d;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: left;
+      padding: 0 14px;
+    }
+    button:hover {
+      background: #2a333d;
+    }
+    .primary {
+      border-color: #4f8cff;
+      background: #244877;
+    }
+    .warn {
+      border-color: #7d6745;
+      background: #3a3022;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: #d9dde3;
+      font-size: 13px;
+    }
+    input {
+      width: 100%;
+      height: 34px;
+      box-sizing: border-box;
+      border: 1px solid #3b4652;
+      border-radius: 5px;
+      background: #171b20;
+      color: #fff;
+      padding: 0 10px;
+    }
+    .note {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border: 1px solid #37414c;
+      border-radius: 6px;
+      background: #171b20;
+      color: #c9d0d8;
+      font-size: 12px;
+    }
+  </style>
+  <script language="javascript">
+    var shell = new ActiveXObject("WScript.Shell");
+    var scriptPath = "";
+
+    function init() {
+      window.resizeTo(790, 520);
+      var full = document.location.pathname;
+      if (full.charAt(0) === "/") full = full.substring(1);
+      full = decodeURIComponent(full).replace(/\//g, "\\");
+      scriptPath = full.replace("Arkaios_Retro_Launcher_UI.hta", "Sync-RetroArchWiiMedia.ps1");
+    }
+
+    function ps(args) {
+      var cmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + scriptPath + '" -WiiRoot "D:\\" ' + args;
+      shell.Run('cmd /k ' + cmd, 1, false);
+    }
+
+    function scan() {
+      ps("-Scan");
+    }
+
+    function syncAll() {
+      ps("-CreatePlaylists -CreateCatalog -SyncThumbnails");
+    }
+
+    function listLegal() {
+      ps("-ListLegalContent");
+    }
+
+    function emulatorStatus() {
+      ps("-ListEmulatorStatus");
+    }
+
+    function installEmulators() {
+      ps("-InstallMissingEmulators -ListEmulatorStatus");
+    }
+
+    function downloadLegal() {
+      var system = document.getElementById("legalSystem").value;
+      var name = document.getElementById("legalName").value;
+      if (!system) {
+        alert("Escribe un sistema legal/homebrew, por ejemplo: Cave Story");
+        return;
+      }
+      var args = '-DownloadLegalContentSystem "' + system.replace(/"/g, '') + '"';
+      if (name) args += ' -DownloadLegalContentName "' + name.replace(/"/g, '') + '"';
+      ps(args);
+    }
+  </script>
+</head>
+<body onload="init()">
+  <div class="wrap">
+    <h1>ARKAIOS Retro Launcher Wii</h1>
+    <p>Preparador de ROMs, playlists y portadas para RetroArch Wii en D:\. Esta interfaz no descarga ROMs comerciales.</p>
+
+    <div class="grid">
+      <button onclick="scan()">Escanear ROMs y plataformas</button>
+      <button class="primary" onclick="syncAll()">Crear playlists y portadas</button>
+      <button onclick="emulatorStatus()">Ver emuladores instalados</button>
+      <button class="primary" onclick="installEmulators()">Instalar emuladores faltantes</button>
+      <button onclick="listLegal()">Listar contenido legal/homebrew</button>
+      <button class="warn" onclick="downloadLegal()">Descargar homebrew legal</button>
+    </div>
+
+    <label for="legalSystem">Sistema legal/homebrew</label>
+    <input id="legalSystem" value="Cave Story">
+
+    <label for="legalName">Filtro opcional de archivo</label>
+    <input id="legalName" placeholder="Ejemplo: En">
+
+    <div class="note">
+      Flujo recomendado: coloca tus backups legales en D:\Roms, presiona Escanear, luego Crear playlists y portadas.
+      En la Wii abre RetroArch desde Homebrew Channel y usa las playlists generadas.
+    </div>
+  </div>
+</body>
+</html>

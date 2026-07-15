@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>ARKAIOS Retro Launcher</name>
+  <coder>ARKAIOS</coder>
+  <version>0.1</version>
+  <release_date>20260714000000</release_date>
+  <short_description>Frontend para RetroArch Wii</short_description>
+  <long_description>Escanea ROMs, detecta plataforma y prepara lanzamiento con el core RetroArch correcto.</long_description>
+</app>
