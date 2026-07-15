@@ -115,6 +115,67 @@
         grid-column: span 2;
       }
 
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      .patcher-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+        gap: 16px;
+      }
+
+      .drop-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 14px 0;
+      }
+
+      .file-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #12161a;
+        padding: 12px;
+      }
+
+      .file-box label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      input[type="file"] {
+        width: 100%;
+        color: var(--text);
+      }
+
+      .patcher-result {
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #0c0e11;
+        padding: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .video-frame {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #0c0e11;
+        aspect-ratio: 16 / 9;
+      }
+
+      .video-frame video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
       .status {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -186,7 +247,9 @@
         }
 
         .grid,
-        .status {
+        .status,
+        .patcher-layout,
+        .drop-row {
           grid-template-columns: 1fr;
         }
 
@@ -266,6 +329,39 @@
 powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -Heartbeat
 powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot D:\ -UploadCatalog</pre>
         </article>
+
+        <article class="panel full" id="patcher">
+          <h2>Crea Tu ROM Hack Local</h2>
+          <div class="patcher-layout">
+            <div>
+              <p class="muted">Aplica un parche BPS a tu copia personal sin subir archivos al servidor. La ROM base y la ROM generada permanecen en tu navegador.</p>
+              <div class="drop-row">
+                <div class="file-box">
+                  <label for="rom-file">ROM base limpia (.sfc/.smc)</label>
+                  <input id="rom-file" type="file" accept=".sfc,.smc,.bin,.rom" />
+                </div>
+                <div class="file-box">
+                  <label for="patch-file">Parche del hack (.bps)</label>
+                  <input id="patch-file" type="file" accept=".bps" />
+                </div>
+              </div>
+              <div class="actions">
+                <button id="apply-bps" type="button">Generar ROM parcheada</button>
+                <button id="clear-patcher" type="button">Limpiar</button>
+              </div>
+              <p class="muted" style="margin-top: 12px;">No se incluye ni se hospeda la ROM comercial. Usa solamente una copia que puedas usar legalmente.</p>
+              <div class="patcher-result" id="patcher-status">Esperando ROM base y parche BPS.</div>
+            </div>
+            <div>
+              <div class="video-frame">
+                <video controls poster="" preload="metadata">
+                  <source src="./media/smw2025-demo.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <p class="muted" style="margin-top: 10px;">Demo opcional: coloca el video en <code>public/media/smw2025-demo.mp4</code> para mostrar una vista previa del hack.</p>
+            </div>
+          </div>
+        </article>
       </section>
     </main>
 
@@ -303,5 +399,6 @@ powershell -ExecutionPolicy Bypass -File .\Register-ArkaiosWiiNode.ps1 -WiiRoot 
         document.getElementById("channel").textContent = "offline";
       });
     </script>
+    <script type="module" src="./patcher.js"></script>
   </body>
 </html>
