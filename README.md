@@ -28,6 +28,29 @@ https://arkaios-retro-wii.djklmr528441.chatgpt.site
 - `index.html`: panel web simple de sincronizacion remota.
 - `public/arkaios-wii-manifest.json`: manifest remoto para futuras alineaciones.
 
+## Frentes separados
+
+El proyecto esta separado logicamente en:
+
+- Sistema Wii real: `native-wii-launcher/` y el pack `apps/arkaios-wii-launcher/`.
+- Herramientas PC: `Sync-RetroArchWiiMedia.ps1`, `AutoDetectar_Juegos_Wii.bat`, saves y portadas.
+- Servidor/nodo: `server/`, `server-installer/`, `Register-ArkaiosWiiNode.ps1`.
+- MCP/agente: `mcp/` y `protocol/`.
+- Web: `index.html`, `patcher.js`, `public/`, `docs/`.
+
+Ver detalles en `docs/PROJECT_MAP.md`.
+
+## Release Wii
+
+El ZIP publico de consola se genera con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-wii-sd-release.ps1
+```
+
+El contenido del ZIP esta definido en `docs/WII_RELEASE.md` y `release-manifests/wii-sd-pack.json`.
+No incluye ROMs, ISOs, WBFS ni datos comerciales.
+
 ## Uso rapido
 
 Abrir:

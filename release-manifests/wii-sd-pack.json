@@ -1,0 +1,38 @@
+{
+  "id": "arkaios-wii-sd-pack",
+  "version": "0.1.0",
+  "purpose": "Pack minimo para instalar ARKAIOS Retro Launcher en una SD/USB de Wii.",
+  "includes": [
+    "apps/arkaios-wii-launcher/boot.dol",
+    "apps/arkaios-wii-launcher/meta.xml",
+    "retroarch/arkaios/README.txt",
+    "retroarch/arkaios/catalog.json",
+    "retroarch/arkaios/metadata.txt",
+    "AutoDetectar_Juegos_Wii.bat",
+    "Actualizar_Portadas_RetroArch_Wii.bat",
+    "Sync-RetroArchWiiMedia.ps1",
+    "Arkaios-SaveSync.ps1"
+  ],
+  "requires_existing_homebrew_for_full_launch": [
+    "apps/snes9xgx/boot.dol",
+    "apps/usbloader_gx/boot.dol",
+    "apps/nintendont/boot.dol",
+    "apps/not64/boot.dol",
+    "apps/DeSmuMEWii/boot.dol",
+    "apps/retroarch-wii/boot.dol"
+  ],
+  "excludes": [
+    "Roms/",
+    "roms/",
+    "wbfs/",
+    "games/",
+    "data/",
+    "node_modules/",
+    ".env",
+    "secrets/",
+    "commercial ROMs",
+    "commercial ISOs",
+    "commercial WBFS"
+  ],
+  "generated_by": "scripts/build-wii-sd-release.ps1"
+}
