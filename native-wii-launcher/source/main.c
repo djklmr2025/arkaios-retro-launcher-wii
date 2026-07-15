@@ -46,6 +46,8 @@ static int usb_mounted = 0;
 static char sd_debug[256] = "";
 static char last_app_path[MAX_PATH_LEN] = "";
 
+static const char *base_name(const char *path);
+
 static int file_exists(const char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
@@ -55,11 +57,34 @@ static int file_exists(const char *path) {
     return 1;
 }
 
-static void build_launch_args(const char *dol_path, const char *rom_path, struct __argv *args) {
+static int extract_wii_game_id(const RomEntry *rom, char *game_id, size_t game_id_size) {
+    const char *sources[] = { rom->name, base_name(rom->path), rom->path };
+    for (int s = 0; s < 3; s++) {
+        const char *value = sources[s];
+        size_t len = strlen(value);
+        for (size_t i = 0; i + 6 <= len; i++) {
+            int ok = 1;
+            for (int j = 0; j < 6; j++) {
+                char c = value[i + j];
+                if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+                    ok = 0;
+                    break;
+                }
+            }
+            if (ok) {
+                snprintf(game_id, game_id_size, "%.6s", value + i);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static void build_launch_args(const char *dol_path, const char *launch_arg, struct __argv *args) {
     memset(args, 0, sizeof(*args));
     args->argvMagic = ARGV_MAGIC;
-    args->argc = rom_path && rom_path[0] ? 2 : 1;
-    args->length = strlen(dol_path) + 1 + (args->argc == 2 ? strlen(rom_path) + 1 : 0);
+    args->argc = launch_arg && launch_arg[0] ? 2 : 1;
+    args->length = strlen(dol_path) + 1 + (args->argc == 2 ? strlen(launch_arg) + 1 : 0);
     args->commandLine = (char *)malloc(args->length);
     args->argv = (char **)malloc(sizeof(char *) * args->argc);
 
@@ -74,7 +99,7 @@ static void build_launch_args(const char *dol_path, const char *rom_path, struct
     cursor += strlen(cursor) + 1;
 
     if (args->argc == 2) {
-        strcpy(cursor, rom_path);
+        strcpy(cursor, launch_arg);
         args->argv[1] = cursor;
     }
 
@@ -143,6 +168,9 @@ static int app_boot_path(const RomEntry *rom, char *path, size_t path_size) {
     if (!strcmp(rom->app, "usbloader_gx")) {
         return try_app_path("apps/usbloader_gx/boot.dol", path, path_size);
     }
+    if (!strcmp(rom->app, "USBLoader")) {
+        return try_app_path("apps/USBLoader/boot.dol", path, path_size);
+    }
     if (!strcmp(rom->app, "Nintendont")) {
         return try_app_path("apps/nintendont/boot.dol", path, path_size);
     }
@@ -176,8 +204,20 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
         return 0;
     }
 
+    char launch_arg[MAX_PATH_LEN];
+    snprintf(launch_arg, sizeof(launch_arg), "%s", rom->path);
+    if (!strcmp(rom->app, "USBLoader")) {
+        char game_id[8];
+        if (!extract_wii_game_id(rom, game_id, sizeof(game_id))) {
+            free(dol);
+            snprintf(error, error_size, "No pude extraer GAMEID para Configurable USB Loader");
+            return 0;
+        }
+        snprintf(launch_arg, sizeof(launch_arg), "#%s", game_id);
+    }
+
     struct __argv args;
-    build_launch_args(dol_path, rom->path, &args);
+    build_launch_args(dol_path, launch_arg, &args);
     if (args.argvMagic != ARGV_MAGIC) {
         free(dol);
         snprintf(error, error_size, "No pude crear argumentos");
@@ -323,8 +363,8 @@ static const MetadataEntry *find_metadata(const char *full_path, const char *fil
 static int detect_rom(const char *file, char *system, size_t system_size, char *launcher, size_t launcher_size, char *app, size_t app_size) {
     if (ends_with_ci(file, ".wbfs")) {
         snprintf(system, system_size, "Wii");
-        snprintf(launcher, launcher_size, "USB Loader GX");
-        snprintf(app, app_size, "usbloader_gx");
+        snprintf(launcher, launcher_size, "Configurable USB Loader");
+        snprintf(app, app_size, "USBLoader");
         return 1;
     }
     if (ends_with_ci(file, ".iso") || ends_with_ci(file, ".gcm") || ends_with_ci(file, ".ciso")) {

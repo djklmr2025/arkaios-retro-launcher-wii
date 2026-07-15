@@ -106,8 +106,8 @@ $externalLaunchers = @(
         Name = "Nintendo - Wii"
         Extensions = @(".wbfs", ".wbf1")
         Roots = @("wbfs")
-        Launcher = "USB Loader GX"
-        AppPath = "apps\usbloader_gx\boot.dol"
+        Launcher = "Configurable USB Loader"
+        AppPath = "apps\USBLoader\boot.dol"
     },
     @{
         Name = "Nintendo - GameCube"
@@ -594,6 +594,8 @@ function Write-Catalog {
         $cover = ""
         if ($system -like "*Super Nintendo*") {
             $cover = "usb:/snes9xgx/covers/$stem.png"
+        } elseif ($system -eq "Nintendo - Wii" -and $entry.GameId) {
+            $cover = "usb:/usb-loader/covers/3d/$($entry.GameId).png"
         } elseif ($entry.GameId) {
             $cover = "usb:/images/$($entry.GameId).png"
         }
