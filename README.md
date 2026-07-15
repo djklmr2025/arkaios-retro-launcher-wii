@@ -8,11 +8,17 @@ Herramientas para convertir una USB/SD de Wii en un entorno unificado de lanzami
 - Nintendo DS mediante DeSmuME Wii.
 - Consolas retro mediante RetroArch Wii.
 
+Panel web:
+
+https://arkaios-retro-wii.djklmr528441.chatgpt.site
+
 ## Herramientas incluidas
 
 - `Arkaios_Retro_Launcher_UI.hta`: interfaz local para Windows.
 - `Sync-RetroArchWiiMedia.ps1`: escaneo, catalogo, playlists, portadas e instalacion de homebrew faltante.
 - `native-wii-launcher/`: base de launcher nativo para compilar a `boot.dol` con devkitPro.
+- `index.html`: panel web simple de sincronizacion remota.
+- `public/arkaios-wii-manifest.json`: manifest remoto para futuras alineaciones.
 
 ## Uso rapido
 
@@ -41,4 +47,3 @@ No descarga ROMs comerciales ni automatiza exploits. El usuario debe aportar sus
 - Open Shop Channel: Nintendont, Not64, DeSmuME Wii.
 - Libretro thumbnails: portadas, snaps y titles.
 - devkitPro: toolchain para compilar el launcher nativo Wii.
-
