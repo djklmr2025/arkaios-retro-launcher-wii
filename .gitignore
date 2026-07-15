@@ -15,7 +15,9 @@ data/
 release/
 _local/
 secrets/
-Roms/
-roms/
+Roms/*
+roms/*
+!Roms/README.md
+!roms/README.md
 .env
 .env.*
