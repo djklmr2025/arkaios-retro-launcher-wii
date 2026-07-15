@@ -44,6 +44,16 @@ static int top = 0;
 static int sd_mounted = 0;
 static int usb_mounted = 0;
 static char sd_debug[256] = "";
+static char last_app_path[MAX_PATH_LEN] = "";
+
+static int file_exists(const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        return 0;
+    }
+    fclose(file);
+    return 1;
+}
 
 static void build_launch_args(const char *dol_path, const char *rom_path, struct __argv *args) {
     memset(args, 0, sizeof(*args));
@@ -116,26 +126,33 @@ static void shutdown_for_chainload(void) {
     SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 }
 
+static int try_app_path(const char *relative, char *path, size_t path_size) {
+    const char *prefixes[] = { "sd:/", "usb:/" };
+    for (int i = 0; i < 2; i++) {
+        snprintf(path, path_size, "%s%s", prefixes[i], relative);
+        if (file_exists(path)) {
+            return 1;
+        }
+    }
+    snprintf(path, path_size, "sd:/%s", relative);
+    return 0;
+}
+
 static int app_boot_path(const RomEntry *rom, char *path, size_t path_size) {
     if (!strcmp(rom->app, "snes9xgx")) {
-        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/snes9xgx/boot.dol" : "usb:/apps/snes9xgx/boot.dol");
-        return 1;
+        return try_app_path("apps/snes9xgx/boot.dol", path, path_size);
     }
     if (!strcmp(rom->app, "usbloader_gx")) {
-        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/usbloader_gx/boot.dol" : "usb:/apps/usbloader_gx/boot.dol");
-        return 1;
+        return try_app_path("apps/usbloader_gx/boot.dol", path, path_size);
     }
     if (!strcmp(rom->app, "Nintendont")) {
-        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/nintendont/boot.dol" : "usb:/apps/nintendont/boot.dol");
-        return 1;
+        return try_app_path("apps/nintendont/boot.dol", path, path_size);
     }
     if (!strcmp(rom->app, "not64")) {
-        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/not64/boot.dol" : "usb:/apps/not64/boot.dol");
-        return 1;
+        return try_app_path("apps/not64/boot.dol", path, path_size);
     }
     if (!strcmp(rom->app, "DeSmuMEWii")) {
-        snprintf(path, path_size, "%s", sd_mounted ? "sd:/apps/DeSmuMEWii/boot.dol" : "usb:/apps/DeSmuMEWii/boot.dol");
-        return 1;
+        return try_app_path("apps/DeSmuMEWii/boot.dol", path, path_size);
     }
     return 0;
 }
@@ -143,9 +160,10 @@ static int app_boot_path(const RomEntry *rom, char *path, size_t path_size) {
 static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_size) {
     char dol_path[MAX_PATH_LEN];
     if (!app_boot_path(rom, dol_path, sizeof(dol_path))) {
-        snprintf(error, error_size, "Sin launcher directo para %s", rom->app);
+        snprintf(error, error_size, "No encontre app para %s en sd:/apps ni usb:/apps", rom->app);
         return 0;
     }
+    snprintf(last_app_path, sizeof(last_app_path), "%s", dol_path);
 
     u8 *dol = NULL;
     size_t dol_size = 0;
@@ -218,6 +236,28 @@ static void strip_extension(char *value) {
     if (dot) {
         *dot = '\0';
     }
+}
+
+static const char *short_system(const char *system) {
+    if (strstr(system, "Super Nintendo") || !strcasecmp(system, "SNES")) {
+        return "SNES";
+    }
+    if (strstr(system, "Nintendo - Wii") || !strcasecmp(system, "Wii")) {
+        return "Wii";
+    }
+    if (strstr(system, "GameCube")) {
+        return "GC";
+    }
+    if (strstr(system, "Nintendo 64")) {
+        return "N64";
+    }
+    if (strstr(system, "Nintendo DS")) {
+        return "NDS";
+    }
+    if (strstr(system, "Game Boy Advance") || !strcasecmp(system, "GBA")) {
+        return "GBA";
+    }
+    return system;
 }
 
 static void trim_newline(char *value) {
@@ -454,21 +494,23 @@ static void draw(void) {
         return;
     }
 
-    for (int i = 0; i < 18 && (top + i) < rom_count; i++) {
+    for (int i = 0; i < 15 && (top + i) < rom_count; i++) {
         int idx = top + i;
-        printf("%c %-10s %.42s\n", idx == selected ? '>' : ' ', roms[idx].system, roms[idx].title);
+        printf("%c %-5s %.36s\n", idx == selected ? '>' : ' ', short_system(roms[idx].system), roms[idx].title);
     }
 
-    printf("\x1b[4;53HSeleccionado");
-    printf("\x1b[6;53H%.25s", roms[selected].title);
-    printf("\x1b[8;53HSistema:");
-    printf("\x1b[9;53H%.25s", roms[selected].system);
-    printf("\x1b[11;53HLauncher:");
-    printf("\x1b[12;53H%.25s", roms[selected].launcher);
-    printf("\x1b[14;53HArchivo:");
-    printf("\x1b[15;53H%.25s", base_name(roms[selected].path));
-    printf("\x1b[17;53HCover:");
-    printf("\x1b[18;53H%.25s", roms[selected].cover[0] ? base_name(roms[selected].cover) : "pendiente");
+    printf("\x1b[4;48HSeleccionado");
+    printf("\x1b[6;48H%.30s", roms[selected].title);
+    printf("\x1b[8;48HSistema:");
+    printf("\x1b[9;48H%.30s", roms[selected].system);
+    printf("\x1b[11;48HLauncher:");
+    printf("\x1b[12;48H%.30s", roms[selected].launcher);
+    printf("\x1b[14;48HArchivo:");
+    printf("\x1b[15;48H%.30s", base_name(roms[selected].path));
+    printf("\x1b[17;48HCover:");
+    printf("\x1b[18;48H%.30s", roms[selected].cover[0] ? base_name(roms[selected].cover) : "pendiente");
+    printf("\x1b[20;48HApp:");
+    printf("\x1b[21;48H%.30s", roms[selected].app);
 }
 
 static void prepare_launch(const RomEntry *rom) {
@@ -483,14 +525,16 @@ static void prepare_launch(const RomEntry *rom) {
         fclose(handoff);
     }
 
-    printf("\nHandoff creado:\n");
-    printf("%s\n", rom->name);
+    printf("\x1b[22;1HHandoff creado:\n");
+    printf("%.72s\n", rom->name);
 
     char error[160];
     printf("\nLanzando %s...\n", rom->launcher);
     VIDEO_WaitVSync();
     if (!launch_app_for_rom(rom, error, sizeof(error))) {
         printf("\nNo se pudo lanzar directo:\n%s\n", error);
+    } else {
+        printf("\nApp usada: %.70s\n", last_app_path);
     }
 
     printf("Presiona B para volver.\n");
@@ -523,7 +567,7 @@ int main(int argc, char **argv) {
         }
         if ((pressed & WPAD_BUTTON_DOWN) && selected < rom_count - 1) {
             selected++;
-            if (selected >= top + 18) {
+            if (selected >= top + 15) {
                 top++;
             }
         }
