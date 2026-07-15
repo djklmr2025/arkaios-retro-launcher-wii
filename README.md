@@ -10,6 +10,10 @@ Herramientas para convertir una USB/SD de Wii en un entorno unificado de lanzami
 
 Panel web:
 
+https://djklmr2025.github.io/arkaios-retro-launcher-wii/
+
+Panel Sites privado/owner-only:
+
 https://arkaios-retro-wii.djklmr528441.chatgpt.site
 
 ## Herramientas incluidas
