@@ -12,7 +12,7 @@ El sistema de consola depende de `ARKAIOS Retro Launcher Wii`, no de la web ni d
 
 El launcher detecta y rutea hacia homebrew ya instalado:
 
-- SNES: `apps/snes9xgx/boot.dol`
+- SNES: `apps/snes9xgx/boot.dol` y prueba opcional por canal `9XGX`
 - Wii: `apps/USBLoader/boot.dol` via Configurable USB Loader
 - GameCube: `apps/nintendont/boot.dol`
 - N64: `apps/not64/boot.dol`
@@ -21,7 +21,7 @@ El launcher detecta y rutea hacia homebrew ya instalado:
 
 Si esos emuladores no existen en la SD/USB, el launcher puede listar juegos pero no lanzarlos correctamente.
 
-Nota SNES: el chainload directo hacia Snes9x GX queda desactivado temporalmente porque en Wii real puede congelar la consola y desincronizar el control. ARKAIOS prepara `LastFileLoaded` en `apps/snes9xgx/settings.xml`; el usuario debe abrir Snes9x GX desde Homebrew Channel hasta integrar un booter compatible.
+Nota SNES: el chainload directo hacia Snes9x GX queda desactivado temporalmente porque en Wii real puede congelar la consola y desincronizar el control. ARKAIOS prepara `LoadFolder=snes9xgx/roms`, `LastFileLoaded` en `apps/snes9xgx/settings.xml`; con el boton `1` intenta lanzar el canal Snes9x GX `9XGX` si esta instalado.
 
 ## Contenido obligatorio del ZIP
 

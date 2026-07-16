@@ -1,6 +1,8 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 #include <fat.h>
+#include <ogc/es.h>
+#include <ogc/wiilaunch.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 #include <dirent.h>
@@ -14,6 +16,7 @@
 #define MAX_ROMS 512
 #define MAX_METADATA 768
 #define MAX_PATH_LEN 512
+#define SNES9XGX_CHANNEL_TITLE_ID 0x0001000139584758ULL
 
 typedef struct {
     char path[MAX_PATH_LEN];
@@ -238,6 +241,33 @@ static void prepare_for_chainload(void) {
     WPAD_Shutdown();
     VIDEO_Flush();
     VIDEO_WaitVSync();
+}
+
+static int title_is_installed(u64 title_id) {
+    u32 count = 0;
+    s32 result = ES_GetNumTicketViews(title_id, &count);
+    return result >= 0 && count > 0;
+}
+
+static int launch_snes9xgx_channel(const RomEntry *rom, char *error, size_t error_size) {
+    update_snes9xgx_last_file(rom);
+    snprintf(last_app_path, sizeof(last_app_path), "channel:9XGX");
+
+    if (!title_is_installed(SNES9XGX_CHANNEL_TITLE_ID)) {
+        snprintf(error, error_size, "Canal Snes9x GX 9XGX no instalado. Instala el canal o usa Homebrew Channel.");
+        return 0;
+    }
+
+    s32 init_result = WII_Initialize();
+    if (init_result < 0) {
+        snprintf(error, error_size, "WII_Initialize fallo: %ld", (long)init_result);
+        return 0;
+    }
+
+    prepare_for_chainload();
+    s32 launch_result = WII_LaunchTitle(SNES9XGX_CHANNEL_TITLE_ID);
+    snprintf(error, error_size, "WII_LaunchTitle 9XGX regreso: %ld", (long)launch_result);
+    return 0;
 }
 
 static int try_app_path(const char *relative, char *path, size_t path_size) {
@@ -627,7 +657,7 @@ static void collect_sd_debug(void) {
 static void draw(void) {
     printf("\x1b[2J");
     printf("\x1b[1;1HARKAIOS Retro Launcher Wii\n");
-    printf("A: preparar lanzamiento | HOME: salir | ROMs: %d\n\n", rom_count);
+    printf("A: lanzar/preparar | 1: SNES canal | HOME: salir | ROMs: %d\n\n", rom_count);
 
     if (rom_count == 0) {
         printf("SD: %s | USB: %s\n", sd_mounted ? "montada" : "no montada", usb_mounted ? "montada" : "no montada");
@@ -677,7 +707,7 @@ static void write_last_error(const RomEntry *rom, const char *error) {
     fclose(file);
 }
 
-static void prepare_launch(const RomEntry *rom) {
+static void prepare_launch(const RomEntry *rom, int use_channel) {
     FILE *handoff = fopen("sd:/retroarch/arkaios-launch.txt", "w");
     if (!handoff) {
         handoff = fopen("usb:/retroarch/arkaios-launch.txt", "w");
@@ -693,9 +723,16 @@ static void prepare_launch(const RomEntry *rom) {
     printf("%.72s\n", rom->name);
 
     char error[160];
-    printf("\nLanzando %s...\n", rom->launcher);
+    printf("\nLanzando %s%s...\n", rom->launcher, use_channel ? " por canal" : "");
     VIDEO_WaitVSync();
-    if (!launch_app_for_rom(rom, error, sizeof(error))) {
+    int launched = 0;
+    if (use_channel && !strcmp(rom->app, "snes9xgx")) {
+        launched = launch_snes9xgx_channel(rom, error, sizeof(error));
+    } else {
+        launched = launch_app_for_rom(rom, error, sizeof(error));
+    }
+
+    if (!launched) {
         write_last_error(rom, error);
         printf("\nNo se pudo lanzar directo:\n%s\n", error);
     } else {
@@ -743,7 +780,18 @@ int main(int argc, char **argv) {
             }
         }
         if ((pressed & WPAD_BUTTON_A) && rom_count > 0) {
-            prepare_launch(&roms[selected]);
+            prepare_launch(&roms[selected], 0);
+            while (1) {
+                WPAD_ScanPads();
+                u32 p = WPAD_ButtonsDown(0);
+                if (p & WPAD_BUTTON_B) {
+                    break;
+                }
+                VIDEO_WaitVSync();
+            }
+        }
+        if ((pressed & WPAD_BUTTON_1) && rom_count > 0) {
+            prepare_launch(&roms[selected], 1);
             while (1) {
                 WPAD_ScanPads();
                 u32 p = WPAD_ButtonsDown(0);
