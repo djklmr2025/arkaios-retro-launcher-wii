@@ -141,6 +141,93 @@ static int read_file_to_memory(const char *path, u8 **buffer, size_t *size) {
     return 1;
 }
 
+static int replace_xml_setting_value(char *xml, size_t xml_size, const char *setting, const char *value) {
+    char needle[96];
+    snprintf(needle, sizeof(needle), "<setting name=\"%s\"", setting);
+
+    char *entry = strstr(xml, needle);
+    if (!entry) {
+        return 0;
+    }
+
+    char *value_attr = strstr(entry, "value=\"");
+    if (!value_attr) {
+        return 0;
+    }
+    value_attr += 7;
+
+    char *value_end = strchr(value_attr, '"');
+    if (!value_end) {
+        return 0;
+    }
+
+    size_t old_len = (size_t)(value_end - value_attr);
+    size_t new_len = strlen(value);
+    size_t tail_len = strlen(value_end);
+    size_t current_len = strlen(xml);
+
+    if (current_len - old_len + new_len + 1 > xml_size) {
+        return 0;
+    }
+
+    memmove(value_attr + new_len, value_end, tail_len + 1);
+    memcpy(value_attr, value, new_len);
+    return 1;
+}
+
+static int update_snes9xgx_last_file(const RomEntry *rom) {
+    const char *settings_paths[] = {
+        "sd:/apps/snes9xgx/settings.xml",
+        "usb:/apps/snes9xgx/settings.xml"
+    };
+
+    const char *rom_file = base_name(rom->path);
+    for (int i = 0; i < 2; i++) {
+        const char *settings_path = settings_paths[i];
+        FILE *file = fopen(settings_path, "rb");
+        if (!file) {
+            continue;
+        }
+
+        fseek(file, 0, SEEK_END);
+        long file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        if (file_size <= 0 || file_size > 65536) {
+            fclose(file);
+            continue;
+        }
+
+        char *xml = (char *)malloc((size_t)file_size + 512);
+        if (!xml) {
+            fclose(file);
+            continue;
+        }
+
+        size_t read = fread(xml, 1, (size_t)file_size, file);
+        fclose(file);
+        if (read != (size_t)file_size) {
+            free(xml);
+            continue;
+        }
+        xml[file_size] = '\0';
+
+        int changed = replace_xml_setting_value(xml, (size_t)file_size + 512, "LastFileLoaded", rom_file);
+        if (changed) {
+            file = fopen(settings_path, "wb");
+            if (file) {
+                fwrite(xml, 1, strlen(xml), file);
+                fclose(file);
+                free(xml);
+                return 1;
+            }
+        }
+        free(xml);
+    }
+
+    return 0;
+}
+
 static void prepare_for_chainload(void) {
     fatUnmount("sd");
     fatUnmount("usb");
@@ -204,8 +291,16 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
         return 0;
     }
 
-    char launch_arg[MAX_PATH_LEN];
-    snprintf(launch_arg, sizeof(launch_arg), "%s", rom->path);
+    char launch_arg[MAX_PATH_LEN] = "";
+    int pass_args = 1;
+
+    if (!strcmp(rom->app, "snes9xgx")) {
+        update_snes9xgx_last_file(rom);
+        pass_args = 0;
+    } else {
+        snprintf(launch_arg, sizeof(launch_arg), "%s", rom->path);
+    }
+
     if (!strcmp(rom->app, "USBLoader")) {
         char game_id[8];
         if (!extract_wii_game_id(rom, game_id, sizeof(game_id))) {
@@ -217,14 +312,18 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
     }
 
     struct __argv args;
-    build_launch_args(dol_path, launch_arg, &args);
-    if (args.argvMagic != ARGV_MAGIC) {
-        free(dol);
-        snprintf(error, error_size, "No pude crear argumentos");
-        return 0;
+    struct __argv *argv_ptr = NULL;
+    if (pass_args) {
+        build_launch_args(dol_path, launch_arg, &args);
+        if (args.argvMagic != ARGV_MAGIC) {
+            free(dol);
+            snprintf(error, error_size, "No pude crear argumentos");
+            return 0;
+        }
+        argv_ptr = &args;
     }
 
-    void (*entry)(void) = (void (*)(void))relocate_dol(dol, &args);
+    void (*entry)(void) = (void (*)(void))relocate_dol(dol, argv_ptr);
     free(dol);
 
     if (!entry) {
