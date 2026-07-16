@@ -6,4 +6,5 @@
   <release_date>20260714000000</release_date>
   <short_description>Frontend para RetroArch Wii</short_description>
   <long_description>Escanea ROMs, detecta plataforma y prepara lanzamiento con el core RetroArch correcto.</long_description>
+  <ahb_access />
 </app>
