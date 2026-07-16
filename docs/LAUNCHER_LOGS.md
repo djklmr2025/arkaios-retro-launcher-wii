@@ -5,6 +5,7 @@ ARKAIOS Retro Launcher Wii escribe logs en la SD/USB para diagnosticar errores s
 ## Archivos
 
 ```text
+sd:/retroarch/arkaios/last-error.txt
 sd:/retroarch/arkaios/launcher.log
 sd:/retroarch/arkaios/launcher-latest.log
 ```
@@ -18,8 +19,11 @@ usb:/retroarch/arkaios/launcher-latest.log
 
 ## Diferencia
 
+- `last-error.txt`: ultimo error de lanzamiento. Es el modo seguro actual.
 - `launcher.log`: historial acumulado.
 - `launcher-latest.log`: solo la sesion mas reciente; se reinicia cada vez que abre ARKAIOS.
+
+Nota: `launcher.log` y `launcher-latest.log` quedaron reservados para una fase posterior. El build estable actual solo escribe `last-error.txt` cuando falla un intento de lanzamiento.
 
 ## Que registra
 

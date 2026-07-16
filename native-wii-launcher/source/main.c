@@ -652,6 +652,27 @@ static void draw(void) {
     printf("\x1b[21;48H%.30s", roms[selected].app);
 }
 
+static void write_last_error(const RomEntry *rom, const char *error) {
+    FILE *file = fopen("sd:/retroarch/arkaios/last-error.txt", "w");
+    if (!file) {
+        file = fopen("usb:/retroarch/arkaios/last-error.txt", "w");
+    }
+    if (!file) {
+        return;
+    }
+
+    fprintf(file, "ARKAIOS last launch error\n");
+    fprintf(file, "title=%s\n", rom->title);
+    fprintf(file, "name=%s\n", rom->name);
+    fprintf(file, "system=%s\n", rom->system);
+    fprintf(file, "launcher=%s\n", rom->launcher);
+    fprintf(file, "app=%s\n", rom->app);
+    fprintf(file, "rom=%s\n", rom->path);
+    fprintf(file, "app_path=%s\n", last_app_path[0] ? last_app_path : "none");
+    fprintf(file, "error=%s\n", error);
+    fclose(file);
+}
+
 static void prepare_launch(const RomEntry *rom) {
     FILE *handoff = fopen("sd:/retroarch/arkaios-launch.txt", "w");
     if (!handoff) {
@@ -671,6 +692,7 @@ static void prepare_launch(const RomEntry *rom) {
     printf("\nLanzando %s...\n", rom->launcher);
     VIDEO_WaitVSync();
     if (!launch_app_for_rom(rom, error, sizeof(error))) {
+        write_last_error(rom, error);
         printf("\nNo se pudo lanzar directo:\n%s\n", error);
     } else {
         printf("\nApp usada: %.70s\n", last_app_path);
