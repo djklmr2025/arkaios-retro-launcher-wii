@@ -291,15 +291,17 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
         return 0;
     }
 
+    if (!strcmp(rom->app, "snes9xgx")) {
+        update_snes9xgx_last_file(rom);
+        free(dol);
+        snprintf(error, error_size, "SNES preparado en Snes9x GX. Abre Snes9x GX desde Homebrew Channel; chainload directo desactivado por seguridad.");
+        return 0;
+    }
+
     char launch_arg[MAX_PATH_LEN] = "";
     int pass_args = 1;
 
-    if (!strcmp(rom->app, "snes9xgx")) {
-        update_snes9xgx_last_file(rom);
-        pass_args = 0;
-    } else {
-        snprintf(launch_arg, sizeof(launch_arg), "%s", rom->path);
-    }
+    snprintf(launch_arg, sizeof(launch_arg), "%s", rom->path);
 
     if (!strcmp(rom->app, "USBLoader")) {
         char game_id[8];

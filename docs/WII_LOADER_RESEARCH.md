@@ -90,8 +90,8 @@ Uso recomendado:
 
 1. Mantener ARKAIOS como autodetector y orquestador.
 2. Lanzar Wii/WBFS por Configurable USB Loader.
-3. Lanzar SNES/N64/NDS/GameCube por emuladores dedicados ya instalados.
-4. Mejorar primero el handoff de SNES porque Snes9x GX abre, pero puede quedarse esperando si no recibe argumentos como espera.
+3. Lanzar SNES/N64/NDS/GameCube por emuladores dedicados ya instalados cuando el booter sea compatible.
+4. Mantener SNES en modo preparado: actualizar `LastFileLoaded` de Snes9x GX, pero no ejecutar chainload directo hasta reemplazar el booter actual.
 5. Agregar render PNG con GRRLIB/PNGU o migrar la UI a una base tipo WiiFlow cuando el lanzamiento sea estable.
 6. Despues conectar servidor/MCP para catalogo, covers y saves. Esa etapa no debe bloquear que el launcher local funcione.
 

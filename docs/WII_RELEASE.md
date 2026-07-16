@@ -21,6 +21,8 @@ El launcher detecta y rutea hacia homebrew ya instalado:
 
 Si esos emuladores no existen en la SD/USB, el launcher puede listar juegos pero no lanzarlos correctamente.
 
+Nota SNES: el chainload directo hacia Snes9x GX queda desactivado temporalmente porque en Wii real puede congelar la consola y desincronizar el control. ARKAIOS prepara `LastFileLoaded` en `apps/snes9xgx/settings.xml`; el usuario debe abrir Snes9x GX desde Homebrew Channel hasta integrar un booter compatible.
+
 ## Contenido obligatorio del ZIP
 
 ```text
