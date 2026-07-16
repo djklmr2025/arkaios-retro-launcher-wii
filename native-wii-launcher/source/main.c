@@ -48,6 +48,24 @@ static char last_app_path[MAX_PATH_LEN] = "";
 
 static const char *base_name(const char *path);
 
+static void reset_callback(u32 irq, void *ctx) {
+    (void)irq;
+    (void)ctx;
+    SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+}
+
+static void power_callback(void) {
+    if (CONF_GetShutdownMode() == CONF_SHUTDOWN_IDLE) {
+        s32 led_mode = CONF_GetIdleLedMode();
+        if (led_mode >= 0 && led_mode <= 2) {
+            STM_SetLedMode(led_mode);
+        }
+        STM_ShutdownToIdle();
+    } else {
+        STM_ShutdownToStandby();
+    }
+}
+
 static int file_exists(const char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
@@ -278,6 +296,12 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
     }
     snprintf(last_app_path, sizeof(last_app_path), "%s", dol_path);
 
+    if (!strcmp(rom->app, "snes9xgx")) {
+        update_snes9xgx_last_file(rom);
+        snprintf(error, error_size, "SNES preparado en Snes9x GX. Abre Snes9x GX desde Homebrew Channel; chainload directo desactivado por seguridad.");
+        return 0;
+    }
+
     u8 *dol = NULL;
     size_t dol_size = 0;
     if (!read_file_to_memory(dol_path, &dol, &dol_size)) {
@@ -288,13 +312,6 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
     if (!validate_dol(dol)) {
         free(dol);
         snprintf(error, error_size, "El launcher no parece DOL valido");
-        return 0;
-    }
-
-    if (!strcmp(rom->app, "snes9xgx")) {
-        update_snes9xgx_last_file(rom);
-        free(dol);
-        snprintf(error, error_size, "SNES preparado en Snes9x GX. Abre Snes9x GX desde Homebrew Channel; chainload directo desactivado por seguridad.");
         return 0;
     }
 
@@ -342,6 +359,8 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
 
 static void init_video(void) {
     VIDEO_Init();
+    SYS_SetResetCallback(reset_callback);
+    SYS_SetPowerCallback(power_callback);
     WPAD_Init();
     rmode = VIDEO_GetPreferredMode(NULL);
     xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
@@ -668,7 +687,11 @@ static void prepare_launch(const RomEntry *rom) {
     printf("%.72s\n", rom->name);
 
     char error[160];
-    printf("\nLanzando %s...\n", rom->launcher);
+    if (!strcmp(rom->app, "snes9xgx")) {
+        printf("\nPreparando %s...\n", rom->launcher);
+    } else {
+        printf("\nLanzando %s...\n", rom->launcher);
+    }
     VIDEO_WaitVSync();
     if (!launch_app_for_rom(rom, error, sizeof(error))) {
         printf("\nNo se pudo lanzar directo:\n%s\n", error);

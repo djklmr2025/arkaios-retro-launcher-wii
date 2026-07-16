@@ -29,6 +29,8 @@ STM_ShutdownToStandby()
 
 Esto conviene llevarlo a ARKAIOS para evitar bloqueos duros cuando una operacion falla.
 
+Estado: adoptado en `native-wii-launcher/source/main.c` para registrar callbacks basicos de RESET y POWER.
+
 ### Montaje de almacenamiento
 
 `source/fat.c` usa:
