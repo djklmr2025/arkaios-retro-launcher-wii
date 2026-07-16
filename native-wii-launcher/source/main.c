@@ -182,6 +182,7 @@ static int update_snes9xgx_last_file(const RomEntry *rom) {
     };
 
     const char *rom_file = base_name(rom->path);
+    const char *load_method = strncmp(rom->path, "sd:/", 4) == 0 ? "1" : "2";
     for (int i = 0; i < 2; i++) {
         const char *settings_path = settings_paths[i];
         FILE *file = fopen(settings_path, "rb");
@@ -212,7 +213,10 @@ static int update_snes9xgx_last_file(const RomEntry *rom) {
         }
         xml[file_size] = '\0';
 
-        int changed = replace_xml_setting_value(xml, (size_t)file_size + 512, "LastFileLoaded", rom_file);
+        int changed = 0;
+        changed |= replace_xml_setting_value(xml, (size_t)file_size + 512, "LoadMethod", load_method);
+        changed |= replace_xml_setting_value(xml, (size_t)file_size + 512, "LastFileLoaded", rom_file);
+        changed |= replace_xml_setting_value(xml, (size_t)file_size + 512, "LoadFolder", "snes9xgx/roms");
         if (changed) {
             file = fopen(settings_path, "wb");
             if (file) {
