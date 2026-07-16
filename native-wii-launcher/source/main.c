@@ -5,7 +5,6 @@
 #include <sdcard/wiisd_io.h>
 #include <dirent.h>
 #include <malloc.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,68 +45,8 @@ static int sd_mounted = 0;
 static int usb_mounted = 0;
 static char sd_debug[256] = "";
 static char last_app_path[MAX_PATH_LEN] = "";
-static int log_seq = 0;
 
 static const char *base_name(const char *path);
-
-static FILE *open_log_file(const char *name, const char *mode) {
-    char path[MAX_PATH_LEN];
-    snprintf(path, sizeof(path), "sd:/retroarch/arkaios/%s", name);
-    FILE *file = fopen(path, mode);
-    if (file) {
-        return file;
-    }
-
-    snprintf(path, sizeof(path), "usb:/retroarch/arkaios/%s", name);
-    return fopen(path, mode);
-}
-
-static void log_event(const char *level, const char *fmt, ...) {
-    char message[512];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(message, sizeof(message), fmt, args);
-    va_end(args);
-
-    FILE *log = open_log_file("launcher.log", "a");
-    if (log) {
-        fprintf(log, "%04d [%s] %s\n", ++log_seq, level, message);
-        fclose(log);
-    }
-
-    FILE *latest = open_log_file("launcher-latest.log", "a");
-    if (latest) {
-        fprintf(latest, "%04d [%s] %s\n", log_seq, level, message);
-        fclose(latest);
-    }
-}
-
-static void reset_latest_log(void) {
-    FILE *latest = open_log_file("launcher-latest.log", "w");
-    if (latest) {
-        fprintf(latest, "ARKAIOS launcher session\n");
-        fclose(latest);
-    }
-    log_seq = 0;
-}
-
-static void reset_callback(u32 irq, void *ctx) {
-    (void)irq;
-    (void)ctx;
-    SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
-}
-
-static void power_callback(void) {
-    if (CONF_GetShutdownMode() == CONF_SHUTDOWN_IDLE) {
-        s32 led_mode = CONF_GetIdleLedMode();
-        if (led_mode >= 0 && led_mode <= 2) {
-            STM_SetLedMode(led_mode);
-        }
-        STM_ShutdownToIdle();
-    } else {
-        STM_ShutdownToStandby();
-    }
-}
 
 static int file_exists(const char *path) {
     FILE *file = fopen(path, "rb");
@@ -332,37 +271,30 @@ static int app_boot_path(const RomEntry *rom, char *path, size_t path_size) {
 }
 
 static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_size) {
-    log_event("INFO", "launch request title='%s' app='%s' launcher='%s' path='%s'", rom->title, rom->app, rom->launcher, rom->path);
-
     char dol_path[MAX_PATH_LEN];
     if (!app_boot_path(rom, dol_path, sizeof(dol_path))) {
         snprintf(error, error_size, "No encontre app para %s en sd:/apps ni usb:/apps", rom->app);
-        log_event("ERROR", "%s", error);
         return 0;
     }
     snprintf(last_app_path, sizeof(last_app_path), "%s", dol_path);
-    log_event("INFO", "resolved app path '%s'", dol_path);
-
-    if (!strcmp(rom->app, "snes9xgx")) {
-        int updated = update_snes9xgx_last_file(rom);
-        log_event(updated ? "WARN" : "ERROR", "SNES safe mode title='%s' settings_update=%s", rom->title, updated ? "ok" : "failed");
-        snprintf(error, error_size, "SNES preparado en Snes9x GX. Abre Snes9x GX desde Homebrew Channel; chainload directo desactivado por seguridad.");
-        return 0;
-    }
 
     u8 *dol = NULL;
     size_t dol_size = 0;
     if (!read_file_to_memory(dol_path, &dol, &dol_size)) {
         snprintf(error, error_size, "No pude leer %s", dol_path);
-        log_event("ERROR", "%s", error);
         return 0;
     }
-    log_event("INFO", "read DOL bytes=%u", (unsigned int)dol_size);
 
     if (!validate_dol(dol)) {
         free(dol);
         snprintf(error, error_size, "El launcher no parece DOL valido");
-        log_event("ERROR", "%s path='%s'", error, dol_path);
+        return 0;
+    }
+
+    if (!strcmp(rom->app, "snes9xgx")) {
+        update_snes9xgx_last_file(rom);
+        free(dol);
+        snprintf(error, error_size, "SNES preparado en Snes9x GX. Abre Snes9x GX desde Homebrew Channel; chainload directo desactivado por seguridad.");
         return 0;
     }
 
@@ -376,11 +308,9 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
         if (!extract_wii_game_id(rom, game_id, sizeof(game_id))) {
             free(dol);
             snprintf(error, error_size, "No pude extraer GAMEID para Configurable USB Loader");
-            log_event("ERROR", "%s title='%s' path='%s'", error, rom->title, rom->path);
             return 0;
         }
         snprintf(launch_arg, sizeof(launch_arg), "#%s", game_id);
-        log_event("INFO", "Configurable USB Loader GAMEID='%s' arg='%s'", game_id, launch_arg);
     }
 
     struct __argv args;
@@ -390,11 +320,9 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
         if (args.argvMagic != ARGV_MAGIC) {
             free(dol);
             snprintf(error, error_size, "No pude crear argumentos");
-            log_event("ERROR", "%s", error);
             return 0;
         }
         argv_ptr = &args;
-        log_event("INFO", "argv prepared argc=%d arg='%s'", args.argc, launch_arg);
     }
 
     void (*entry)(void) = (void (*)(void))relocate_dol(dol, argv_ptr);
@@ -402,11 +330,9 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
 
     if (!entry) {
         snprintf(error, error_size, "No pude reubicar el DOL");
-        log_event("ERROR", "%s path='%s'", error, dol_path);
         return 0;
     }
 
-    log_event("INFO", "chainload transfer path='%s'", dol_path);
     *(vu32 *)0x800000F8 = 0x0E7BE2C0;
     *(vu32 *)0x800000FC = 0x2B73A840;
     prepare_for_chainload();
@@ -416,8 +342,6 @@ static int launch_app_for_rom(const RomEntry *rom, char *error, size_t error_siz
 
 static void init_video(void) {
     VIDEO_Init();
-    SYS_SetResetCallback(reset_callback);
-    SYS_SetPowerCallback(power_callback);
     WPAD_Init();
     rmode = VIDEO_GetPreferredMode(NULL);
     xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
@@ -738,27 +662,18 @@ static void prepare_launch(const RomEntry *rom) {
         fprintf(handoff, "app=%s\n", rom->app);
         fprintf(handoff, "rom=%s\n", rom->path);
         fclose(handoff);
-        log_event("INFO", "handoff written title='%s' app='%s' rom='%s'", rom->title, rom->app, rom->path);
-    } else {
-        log_event("ERROR", "handoff write failed title='%s' rom='%s'", rom->title, rom->path);
     }
 
     printf("\x1b[22;1HHandoff creado:\n");
     printf("%.72s\n", rom->name);
 
     char error[160];
-    if (!strcmp(rom->app, "snes9xgx")) {
-        printf("\nPreparando %s...\n", rom->launcher);
-    } else {
-        printf("\nLanzando %s...\n", rom->launcher);
-    }
+    printf("\nLanzando %s...\n", rom->launcher);
     VIDEO_WaitVSync();
     if (!launch_app_for_rom(rom, error, sizeof(error))) {
         printf("\nNo se pudo lanzar directo:\n%s\n", error);
-        log_event("ERROR", "launch failed title='%s' message='%s'", rom->title, error);
     } else {
         printf("\nApp usada: %.70s\n", last_app_path);
-        log_event("INFO", "launch returned unexpectedly title='%s' app_path='%s'", rom->title, last_app_path);
     }
 
     printf("Presiona B para volver.\n");
@@ -771,12 +686,8 @@ int main(int argc, char **argv) {
     init_video();
     sd_mounted = fatMountSimple("sd", &__io_wiisd) ? 1 : 0;
     usb_mounted = fatMountSimple("usb", &__io_usbstorage) ? 1 : 0;
-    reset_latest_log();
-    log_event("INFO", "startup sd=%s usb=%s", sd_mounted ? "mounted" : "missing", usb_mounted ? "mounted" : "missing");
     collect_sd_debug();
-    log_event("INFO", "sd_debug='%s'", sd_debug);
     load_metadata();
-    log_event("INFO", "metadata_count=%d", metadata_count);
 
     scan_dir("sd:/Roms");
     scan_dir("usb:/Roms");
@@ -784,7 +695,6 @@ int main(int argc, char **argv) {
     scan_dir("usb:/wbfs");
     scan_dir("sd:/games");
     scan_dir("usb:/games");
-    log_event("INFO", "scan complete rom_count=%d", rom_count);
 
     while (1) {
         draw();
